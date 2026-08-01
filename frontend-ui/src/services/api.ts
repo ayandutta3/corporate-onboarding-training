@@ -110,7 +110,9 @@ export async function uploadDocument(
   mode: 'vector' | 'hybrid',
   department: string,
   token: string,
-  backendUrl: string = DEFAULT_BACKEND_URL
+  backendUrl: string = DEFAULT_BACKEND_URL,
+  title?: string,
+  description?: string
 ): Promise<UploadedDoc> {
   const endpoint = mode === 'hybrid' ? '/upload/hybrid' : '/upload/vector';
   
@@ -118,6 +120,8 @@ export async function uploadDocument(
   formData.append('file', file);
   // Backend infers department from JWT, but we send it just in case.
   formData.append('department', department);
+  if (title) formData.append('title', title);
+  if (description) formData.append('description', description);
 
   const res = await fetch(`${backendUrl}${endpoint}`, {
     method: 'POST',
@@ -251,4 +255,52 @@ export async function fetchTraces(
 
 export function getActiveDocuments(): UploadedDoc[] {
   return [...activeDocs];
+}
+
+export async function fetchDocuments(
+  token: string,
+  backendUrl: string = DEFAULT_BACKEND_URL,
+  params: Record<string, any> = {}
+): Promise<{ items: any[], total: number, page: number, size: number, pages: number }> {
+  const queryParams = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) queryParams.append(key, value.toString());
+  });
+  
+  const res = await fetch(`${backendUrl}/documents?${queryParams.toString()}`, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  if (!res.ok) throw new Error('Failed to fetch documents');
+  return res.json();
+}
+
+export async function deleteDocument(
+  docId: string,
+  token: string,
+  backendUrl: string = DEFAULT_BACKEND_URL
+): Promise<void> {
+  const res = await fetch(`${backendUrl}/documents/${docId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  if (!res.ok) throw new Error('Failed to delete document');
+}
+
+export async function updateDocument(
+  docId: string,
+  data: { title?: string, department?: string, knowledge_type?: string },
+  token: string,
+  backendUrl: string = DEFAULT_BACKEND_URL
+): Promise<any> {
+  const res = await fetch(`${backendUrl}/documents/${docId}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) throw new Error('Failed to update document');
+  return res.json();
 }

@@ -37,10 +37,11 @@ export const UploadPortal: React.FC<UploadPortalProps> = ({
 
   const getDefaultDepartment = (role: string) => {
     switch(role) {
-      case 'hr': return 'People & Culture';
-      case 'technical_manager': return 'Core Architecture';
-      case 'finance_manager': return 'Corporate Finance & Ops';
-      default: return 'Corporate Finance & Ops';
+      case 'hr': return 'HR';
+      case 'technical_manager': return 'Engineering';
+      case 'finance_manager': return 'Finance';
+      case 'admin': return 'Corporate Finance & Ops';
+      default: return 'Hidden / Read Only';
     }
   };
 
@@ -49,6 +50,8 @@ export const UploadPortal: React.FC<UploadPortalProps> = ({
   const [selectedDepartment, setSelectedDepartment] = useState(getDefaultDepartment(user.role));
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [docTitle, setDocTitle] = useState('');
+  const [docDescription, setDocDescription] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [lastUploadedDoc, setLastUploadedDoc] = useState<UploadedDoc | null>(null);
@@ -93,7 +96,8 @@ export const UploadPortal: React.FC<UploadPortalProps> = ({
         selectedDepartment,
         user.token || 'demo-token',
         backendUrl,
-        isDemoMode
+        docTitle,
+        docDescription
       );
 
       clearInterval(interval);
@@ -101,6 +105,8 @@ export const UploadPortal: React.FC<UploadPortalProps> = ({
       setLastUploadedDoc(doc);
       setDocList(getActiveDocuments());
       setSelectedFile(null);
+      setDocTitle('');
+      setDocDescription('');
     } catch (err) {
       console.error('Error during document ingestion:', err);
     } finally {
@@ -188,12 +194,14 @@ export const UploadPortal: React.FC<UploadPortalProps> = ({
               <select
                 value={selectedDepartment}
                 onChange={(e) => setSelectedDepartment(e.target.value)}
-                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
+                disabled={user.role !== 'admin'}
+                className={`w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 font-mono ${user.role !== 'admin' ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <option value="Corporate Finance & Ops" className="bg-[#0e1117]">Corporate Finance & Ops</option>
-                <option value="Core Architecture" className="bg-[#0e1117]">Core Architecture</option>
-                <option value="People & Culture" className="bg-[#0e1117]">People & Culture</option>
-                <option value="Global Infrastructure & IT" className="bg-[#0e1117]">Global Infrastructure & IT</option>
+                <option value="HR" className="bg-[#0e1117]">HR</option>
+                <option value="Engineering" className="bg-[#0e1117]">Engineering</option>
+                <option value="Finance" className="bg-[#0e1117]">Finance</option>
+                <option value="Hidden / Read Only" className="bg-[#0e1117]" disabled>Hidden / Read Only</option>
               </select>
             </div>
 
@@ -204,6 +212,34 @@ export const UploadPortal: React.FC<UploadPortalProps> = ({
               <div className="px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-xs font-mono text-indigo-300">
                 {ingestionMode === 'hybrid' ? 'POST /upload/hybrid' : 'POST /upload/vector'}
               </div>
+            </div>
+          </div>
+
+          {/* Title and Description */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                Document Title (Optional)
+              </label>
+              <input
+                type="text"
+                value={docTitle}
+                onChange={(e) => setDocTitle(e.target.value)}
+                placeholder="e.g. Q3 Townhall Recording"
+                className="w-full px-4 py-2.5 bg-black/40 border border-white/10 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                Description (Optional)
+              </label>
+              <input
+                type="text"
+                value={docDescription}
+                onChange={(e) => setDocDescription(e.target.value)}
+                placeholder="Brief summary for vector context..."
+                className="w-full px-4 py-2.5 bg-black/40 border border-white/10 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500"
+              />
             </div>
           </div>
 
@@ -222,7 +258,7 @@ export const UploadPortal: React.FC<UploadPortalProps> = ({
               type="file"
               ref={fileInputRef}
               onChange={handleFileSelect}
-              accept=".pdf,.docx,.txt,.md,.csv"
+              accept=".pdf,.docx,.txt,.md,.csv,.mp3,.wav,.m4a,.flac,.ogg,.aac"
               className="hidden"
             />
 
@@ -244,7 +280,7 @@ export const UploadPortal: React.FC<UploadPortalProps> = ({
                   Drag and drop to ingest or <span className="text-indigo-400 hover:underline">browse</span>
                 </p>
                 <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                  Supports PDF, DOCX, Markdown, TXT, and CSV formats. Documents will be chunked and indexed into ChromaDB.
+                  Supports Document and Audio formats. Max 25MB for Audio. Documents will be chunked and indexed into ChromaDB.
                 </p>
                 <p className="text-[10px] text-slate-600 font-black uppercase tracking-wider pt-2">Hybrid Mode Active</p>
               </div>

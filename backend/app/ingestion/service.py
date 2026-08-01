@@ -29,8 +29,11 @@ class IngestionService:
             return "Engineering", "Technical"
         return "General", "General"
 
-    async def process_upload(self, file: UploadFile, user: UserInDB, pipeline_type: str):
+    async def process_upload(self, file: UploadFile, user: UserInDB, pipeline_type: str, title: str = None, description: str = None, version: int = 1, requested_department: str = None):
         department, knowledge_type = self._determine_metadata_from_role(user.role)
+        
+        if user.role == Role.ADMIN and requested_department:
+            department = requested_department
         
         # 1. Save Original File
         file_id = str(uuid.uuid4())
@@ -41,6 +44,10 @@ class IngestionService:
         # 2. Extract Text (OCR/Whisper if needed)
         extracted_text = await extract_text_from_file(dest_path, file.filename)
         
+        # Append description to the text if available for better vector context
+        if description:
+            extracted_text = f"Title: {title or file.filename}\nDescription: {description}\n\n{extracted_text}"
+            
         # 3. AI Summary & Tags
         summary, tags = await generate_ai_summary_and_tags(extracted_text)
         
@@ -51,10 +58,13 @@ class IngestionService:
             uploaded_by=user.email,
             department=department,
             knowledge_type=knowledge_type,
+            title=title,
+            description=description,
             extracted_text=extracted_text,
             ai_summary=summary,
             ai_tags=tags,
-            embedding_generated=False
+            embedding_generated=False,
+            version=version
         )
         
         # 5. Pipeline Specific Logic

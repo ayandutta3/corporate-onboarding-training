@@ -15,6 +15,8 @@ import {
   Building2,
   CheckCircle2,
   Zap,
+  Upload,
+  Database
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -136,6 +138,19 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               <Activity className="w-4 h-4" />
               Tracing & Metrics
+            </button>
+
+
+            <button
+              onClick={() => setActiveTab('policy')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold tracking-wide transition-all ${
+                activeTab === 'policy' 
+                  ? 'bg-white/10 text-white border border-white/10 shadow-md' 
+                  : 'text-slate-400 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <Database className="w-4 h-4" />
+              Policy Hub
             </button>
 
             {user.role === 'admin' && (

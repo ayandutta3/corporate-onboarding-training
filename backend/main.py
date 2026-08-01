@@ -39,12 +39,14 @@ app.add_middleware(
 from app.ingestion.router import router as ingestion_router
 from app.search.router import router as search_router
 from app.monitoring.router import router as monitoring_router
+from app.documents.router import router as documents_router
 
 app.include_router(auth_router)
 app.include_router(admin_router)
 app.include_router(ingestion_router)
 app.include_router(search_router)
 app.include_router(monitoring_router)
+app.include_router(documents_router)
 
 @app.get("/health")
 async def health_check():

@@ -41,12 +41,23 @@ async def extract_text_from_file(file_path: str, filename: str) -> str:
         if result and result[0]:
             for line in result[0]:
                 text += line[1][0] + " "
-    elif ext in ['mp4', 'avi', 'mp3', 'wav']:
+    elif ext in ['mp4', 'avi']:
         import whisper
         # Handle video to audio if needed, Whisper can often process video files directly
         model = whisper.load_model("base")
         result = model.transcribe(file_path)
         text = result["text"]
+    elif ext in ['mp3', 'wav', 'm4a', 'flac', 'ogg', 'aac']:
+        from openai import AsyncOpenAI
+        client = AsyncOpenAI(api_key=settings.openai_api_key)
+        
+        # OpenAI Whisper API requires standard open file objects
+        with open(file_path, "rb") as audio_file:
+            transcription = await client.audio.transcriptions.create(
+                model="whisper-1",
+                file=audio_file
+            )
+        text = transcription.text
     
     return text.strip()
 

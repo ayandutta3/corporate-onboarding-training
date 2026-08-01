@@ -68,21 +68,31 @@ async def keyword_search(state: GraphState) -> GraphState:
         
     # A simple fallback keyword search over candidate docs metadata/summary since OpenSearch is removed
     query_lower = state["request"].query.lower()
+    query_words = {word for word in query_lower.replace("?", "").replace(".", "").split() if len(word) > 3}
     filtered_candidates = []
     
     for doc in state["candidate_docs"]:
-        # Simple text matching on filename, summary, tags
         match = False
-        if query_lower in doc.filename.lower(): match = True
-        if doc.ai_summary and query_lower in doc.ai_summary.lower(): match = True
-        if any(query_lower in tag.lower() for tag in doc.ai_tags): match = True
         
+        # 1. Check if any tag appears exactly in the query
+        if doc.ai_tags and any(tag.lower() in query_lower for tag in doc.ai_tags):
+            match = True
+            
+        # 2. Check if any meaningful query word appears in filename or tags
+        if not match:
+            doc_text_to_search = doc.filename.lower() + " " + " ".join([t.lower() for t in (doc.ai_tags or [])])
+            if any(word in doc_text_to_search for word in query_words):
+                match = True
+                
+        # 3. Check if query is a substring of the summary
+        if not match and doc.ai_summary and query_lower in doc.ai_summary.lower():
+            match = True
+            
         if match:
             filtered_candidates.append(doc)
             
-    # If nothing matches keyword exactly, we just fallback to original candidates to prevent empty results
-    if filtered_candidates:
-        state["candidate_docs"] = filtered_candidates
+    # We use keyword search as a strict filter. If no matches, we stop and don't fallback.
+    state["candidate_docs"] = filtered_candidates
         
     return state
 
@@ -146,18 +156,23 @@ async def vector_search(state: GraphState) -> GraphState:
 async def prompt_builder(state: GraphState) -> GraphState:
     context_text = ""
     citations = []
+    seen_documents = set()
     
     for i, res in enumerate(state.get("retrieved_chunks", [])):
         doc = res["document"]
         meta = res["metadata"]
         context_text += f"\n--- Source {i+1} ---\n{doc}\n"
-        citations.append(Citation(
-            document_name=meta.get("document_name", "Unknown"),
-            version=meta.get("version"),
-            page_number=meta.get("page_number"),
-            section=meta.get("section"),
-            timestamp=meta.get("timestamp")
-        ))
+        
+        doc_name = meta.get("document_name", "Unknown")
+        if doc_name not in seen_documents:
+            seen_documents.add(doc_name)
+            citations.append(Citation(
+                document_name=doc_name,
+                version=meta.get("version"),
+                page_number=meta.get("page_number"),
+                section=meta.get("section"),
+                timestamp=meta.get("timestamp")
+            ))
         
     state["context_text"] = context_text
     state["citations"] = citations

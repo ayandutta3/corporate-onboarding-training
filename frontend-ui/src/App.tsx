@@ -11,12 +11,13 @@ import { LoginScreen } from './components/LoginScreen';
 import { SearchDashboard } from './components/SearchDashboard';
 import { UploadPortal } from './components/UploadPortal';
 import { MonitoringDashboard } from './components/MonitoringDashboard';
+import { PolicyHub } from './components/PolicyHub';
 import { UserManagementModal } from './components/UserManagementModal';
 import { SettingsModal } from './components/SettingsModal';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
-  const [activeTab, setActiveTab] = useState<'search' | 'upload' | 'monitoring' | 'users'>('search');
+  const [activeTab, setActiveTab] = useState<'search' | 'upload' | 'monitoring' | 'policy' | 'users'>('search');
 
   const [backendUrl, setBackendUrl] = useState<string>(DEFAULT_BACKEND_URL);
   const [isDemoMode, setIsDemoMode] = useState<boolean>(true);
@@ -93,6 +94,10 @@ export default function App() {
             backendUrl={backendUrl}
             isDemoMode={isDemoMode}
           />
+        )}
+
+        {activeTab === 'policy' && (
+          <PolicyHub user={currentUser} backendUrl={backendUrl} />
         )}
 
         {activeTab === 'monitoring' && (

@@ -8,6 +8,8 @@ class DocumentModel(MongoBaseModel):
     uploaded_by: str
     department: str
     knowledge_type: str
+    title: Optional[str] = None
+    description: Optional[str] = None
     extracted_text: Optional[str] = None
     ai_summary: Optional[str] = None
     ai_tags: List[str] = Field(default_factory=list)
