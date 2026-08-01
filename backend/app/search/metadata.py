@@ -18,7 +18,11 @@ class MetadataSearchService:
         
         query = {}
         if role:
-            query["access_roles"] = role
+            query["$or"] = [
+                {"access_roles": role},
+                {"access_roles": {"$size": 0}},
+                {"access_roles": {"$exists": False}}
+            ]
         if department:
             query["department"] = department
         if knowledge_type:

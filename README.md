@@ -115,6 +115,13 @@ graph TD
     Q -->|Passes check| P[Final RAG Response]
     Q -->|Fails check| G
 ```
+#### LangGraph Node Descriptions
+* **Intent Detection Node**: Analyzes the raw query to identify what type of corporate data the user is seeking (e.g., HR policies vs. Technical docs) and sets initial filter parameters.
+* **Vector Search Node**: Connects to ChromaDB to retrieve semantically similar chunks. Immediately drops any returned chunks that violate the user's role-based access control (RBAC) levels.
+* **Hybrid Search Node (Lazy Embedder)**: First queries MongoDB for matching documents based strictly on metadata (department/role). If those documents are not yet in the vector database, it generates embeddings on the fly (Lazy Embedding). It then uses ChromaDB to semantically rerank the narrowed subset.
+* **Prompt Builder Node**: Takes the surviving document chunks from either search path and formats them into an optimized context window for the LLM, ensuring token limits are respected.
+* **LLM Generation Node**: Passes the structured context and user query to OpenAI (or the configured LLM) to synthesize a coherent, accurate answer.
+* **QA / Evaluation Guardrail Node**: An LLM-as-a-judge system that reviews the generated answer against the retrieved context. If it detects hallucinations or lack of grounding, it kicks the flow back to the Prompt Builder to try again; otherwise, it releases the final response to the user.
 
 * **`POST /search/vector`**: Analyzes intent -> Embeds the user query -> Queries ChromaDB using semantic similarity -> Filters out chunks that do not match the user's role/department access level -> Formats retrieved chunks into an LLM context window -> Generates the final synthesized answer.
 * **`POST /search/hybrid`**: Analyzes intent -> Filters MongoDB documents matching the user's department/role -> **Lazy Embeds** the narrowed down list of hybrid documents (if they don't already exist in ChromaDB) -> Uses ChromaDB to rerank the now-embedded chunks -> Prompts LLM.

@@ -118,10 +118,14 @@ async def vector_search(state: GraphState) -> GraphState:
         state["retrieved_chunks"] = []
         return state
         
-    lazy_embedding_service = LazyEmbeddingService(db)
     from app.vector.repository import VectorRepository
     from app.vector.embedding import EmbeddingService
-    reranker = SemanticReranker(VectorRepository(), EmbeddingService())
+    
+    vector_repo = VectorRepository()
+    embedding_service = EmbeddingService()
+    
+    lazy_embedding_service = LazyEmbeddingService(db, vector_repo, embedding_service)
+    reranker = SemanticReranker(vector_repo, embedding_service)
     
     _, lazy_embed_time_ms, generated_count = await lazy_embedding_service.ensure_embeddings(candidates)
     
@@ -161,7 +165,7 @@ async def prompt_builder(state: GraphState) -> GraphState:
 
 async def generate_response(state: GraphState) -> GraphState:
     if not state.get("retrieved_chunks"):
-        state["llm_response"] = "I don't have enough information to answer that based on your access level."
+        state["llm_response"] = "I don't have enough information to answer that based on your access level or current search filters."
         return state
         
     prompt = PromptTemplate(
