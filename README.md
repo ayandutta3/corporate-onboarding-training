@@ -88,25 +88,32 @@ Available to all authenticated users. Orchestrated by the `build_search_graph()`
 ```mermaid
 graph TD
     A[User Query] --> B[Intent Detection Node]
-    B --> C{Search Mode}
+    B --> C{Route by Intent & Mode}
     
-    C -->|Vector| D[Embed Query]
-    D --> E[(ChromaDB: Vector Search)]
+    %% Vector Path
+    C -->|Vector Search| D[Embed Query]
+    D --> E[(ChromaDB)]
     E --> F[Filter by User RBAC]
-    F --> G[LLM Prompt Node]
     
-    C -->|Hybrid| H[(MongoDB: Filter by Dept/Role)]
+    %% Hybrid Path
+    C -->|Hybrid Search| H[(MongoDB: Dept/Role Filter)]
     H --> I[Lazy Embedding Service]
-    I --> J{Already in ChromaDB?}
-    J -->|No| K[Generate Embeddings & Save]
+    I --> J{Already Embedded?}
+    J -->|No| K[Generate Embeddings]
     J -->|Yes| L[Skip Embedding]
     K --> M[(ChromaDB)]
     L --> M
     M --> N[Semantic Reranking]
+    
+    %% Convergence
+    F --> G[Prompt Builder Node]
     N --> G
     
+    %% LangGraph Evaluation & Response
     G --> O[LLM Generation Node]
-    O --> P[Final Response]
+    O --> Q[QA / Evaluation Guardrail Node]
+    Q -->|Passes check| P[Final RAG Response]
+    Q -->|Fails check| G
 ```
 
 * **`POST /search/vector`**: Analyzes intent -> Embeds the user query -> Queries ChromaDB using semantic similarity -> Filters out chunks that do not match the user's role/department access level -> Formats retrieved chunks into an LLM context window -> Generates the final synthesized answer.
