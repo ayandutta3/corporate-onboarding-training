@@ -1,0 +1,6 @@
+{
+  "name": "Enterprise Onboarding & Training RAG Portal",
+  "description": "Modern enterprise corporate onboarding, training search, vector/hybrid ingestion, and LangGraph RAG monitoring platform.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
