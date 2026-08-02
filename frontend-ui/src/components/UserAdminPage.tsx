@@ -15,8 +15,8 @@ export const UserAdminPage: React.FC<UserAdminPageProps> = ({ user, backendUrl }
   // Form state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [division, setDivision] = useState<'Corporate' | 'Business Line'>(user.role === 'hr' ? 'Business Line' : 'Corporate');
-  const [role, setRole] = useState<UserRole>(user.role === 'hr' ? 'user' : 'admin');
+  const [division, setDivision] = useState<'Corporate' | 'Business Line'>('Corporate');
+  const [role, setRole] = useState<UserRole>('user');
   const [businessLine, setBusinessLine] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const [feedback, setFeedback] = useState<{ success: boolean; message: string } | null>(null);
@@ -56,10 +56,7 @@ export const UserAdminPage: React.FC<UserAdminPageProps> = ({ user, backendUrl }
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) return;
-    if (user.role === 'hr' && !businessLine) {
-      setFeedback({ success: false, message: 'Business Line is required.' });
-      return;
-    }
+
     if (division === 'Business Line' && !businessLine) {
       setFeedback({ success: false, message: 'Business Line is required for Business Line Division.' });
       return;
@@ -189,7 +186,7 @@ export const UserAdminPage: React.FC<UserAdminPageProps> = ({ user, backendUrl }
                     if (newDiv === 'Corporate') setRole('admin');
                     else setRole('user');
                   }}
-                  disabled={isHr}
+                  disabled={false}
                   className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-sm text-white focus:outline-none focus:border-amber-500 appearance-none disabled:opacity-50"
                 >
                   <option value="Corporate" className="bg-[#0e1117]">Corporate</option>
@@ -200,11 +197,12 @@ export const UserAdminPage: React.FC<UserAdminPageProps> = ({ user, backendUrl }
                 <select
                   value={role}
                   onChange={(e) => setRole(e.target.value as UserRole)}
-                  disabled={isHr}
+                  disabled={false}
                   className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-sm text-white focus:outline-none focus:border-amber-500 appearance-none capitalize disabled:opacity-50"
                 >
                   {division === 'Corporate' ? (
                     <>
+                      <option value="user" className="bg-[#0e1117]">User</option>
                       <option value="admin" className="bg-[#0e1117]">Admin</option>
                       <option value="hr" className="bg-[#0e1117]">HR Manager</option>
                       <option value="finance_manager" className="bg-[#0e1117]">Finance Manager</option>
@@ -271,7 +269,7 @@ export const UserAdminPage: React.FC<UserAdminPageProps> = ({ user, backendUrl }
                   <td colSpan={6} className="py-8 text-center text-slate-400">No users found.</td>
                 </tr>
               ) : (
-                users.map((u) => (
+                users.filter(u => user.role === 'admin' || (user.division === 'BusinessLine' ? u.businessLine === user.businessLine : true)).map((u) => (
                   <tr key={u.id} className="hover:bg-white/5 transition-colors">
                     <td className="py-3 px-4 font-mono text-white">{u.email}</td>
                     <td className="py-3 px-4 capitalize text-slate-300">{u.role.replace('_', ' ')}</td>

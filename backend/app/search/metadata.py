@@ -11,7 +11,11 @@ class MetadataSearchService:
         self, 
         role: Optional[str] = None, 
         department: Optional[str] = None, 
-        knowledge_type: Optional[str] = None,
+        division: Optional[str] = None,
+        businessLine: Optional[str] = None,
+        user_division: Optional[str] = None,
+        user_businessLine: Optional[str] = None,
+        is_admin: bool = False,
         status: Optional[str] = None,
         version: Optional[int] = None
     ) -> List[DocumentModel]:
@@ -23,10 +27,33 @@ class MetadataSearchService:
                 {"access_roles": {"$size": 0}},
                 {"access_roles": {"$exists": False}}
             ]
+            
+        if not is_admin:
+            # RBAC for Division / BusinessLine
+            division_or_clauses = [{"division": "Corporate"}]
+            if user_division == "BusinessLine" and user_businessLine:
+                division_or_clauses.append({
+                    "division": "BusinessLine",
+                    "businessLine": user_businessLine
+                })
+            
+            if "$or" in query:
+                # Need an $and to combine the role $or and division $or
+                query["$and"] = [
+                    {"$or": query.pop("$or")},
+                    {"$or": division_or_clauses}
+                ]
+            else:
+                query["$or"] = division_or_clauses
+                
+        # Apply requested filters if they don't violate RBAC
         if department:
             query["department"] = department
-        if knowledge_type:
-            query["knowledge_type"] = knowledge_type
+        if division:
+            query["division"] = division
+        if businessLine:
+            query["businessLine"] = businessLine
+            
         if status:
             query["status"] = status
         if version is not None:

@@ -26,6 +26,8 @@ export type SearchMode = 'vector' | 'hybrid';
 export type IngestionMode = 'vector' | 'hybrid';
 
 export interface SearchFilters {
+  division?: string;
+  businessLine?: string;
   department?: string;
   category?: string;
   securityLevel?: string;
@@ -33,15 +35,13 @@ export interface SearchFilters {
 }
 
 export interface Citation {
-  id: string;
-  title: string;
-  source: string;
-  department: string;
-  score: number; // 0 to 1 or percentage
-  excerpt: string;
-  pageNumber?: number;
-  chunkId?: string;
-  author?: string;
+  document_id: string;
+  document_name: string;
+  file_type: string;
+  version?: number;
+  page_number?: number;
+  section?: string;
+  timestamp?: string;
 }
 
 export interface RagasMetrics {
@@ -100,6 +100,8 @@ export interface UploadedDoc {
   fileType: string;
   mode: IngestionMode;
   department: string;
+  division?: string;
+  businessLine?: string;
   uploadedBy: string;
   timestamp: string;
   chunksCount: number;

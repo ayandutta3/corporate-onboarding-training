@@ -47,8 +47,8 @@ export const SearchDashboard: React.FC<SearchDashboardProps> = ({
 }) => {
   const [query, setQuery] = useState('');
   const [searchMode, setSearchMode] = useState<SearchMode>('hybrid');
-  const [departmentFilter, setDepartmentFilter] = useState('All');
-  const [categoryFilter, setCategoryFilter] = useState('All');
+  const [divisionFilter, setDivisionFilter] = useState('All');
+  const [businessLineFilter, setBusinessLineFilter] = useState('All');
 
   const [isLoading, setIsLoading] = useState(false);
   const [activeResponse, setActiveResponse] = useState<SearchResponse | null>(null);
@@ -68,8 +68,8 @@ export const SearchDashboard: React.FC<SearchDashboardProps> = ({
     setFeedbackGiven(null);
 
     const filters: SearchFilters = {
-      department: departmentFilter !== 'All' ? departmentFilter : undefined,
-      category: categoryFilter !== 'All' ? categoryFilter : undefined,
+      division: divisionFilter !== 'All' ? divisionFilter : undefined,
+      businessLine: businessLineFilter !== 'All' ? businessLineFilter : undefined,
     };
 
     try {
@@ -200,28 +200,44 @@ export const SearchDashboard: React.FC<SearchDashboardProps> = ({
           <div className="flex flex-wrap items-center justify-between gap-3 text-xs pt-1">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-slate-500 font-bold uppercase tracking-wider text-[10px] flex items-center gap-1">
-                <Filter className="w-3.5 h-3.5 text-indigo-400" /> Dept Filter:
+                <Filter className="w-3.5 h-3.5 text-indigo-400" /> Division:
               </span>
-              {[
-                'All',
-                'Corporate Finance & Ops',
-                'Core Architecture',
-                'People & Culture',
-                'Global Infrastructure & IT',
-              ].map((dept) => (
+              {['All', 'Corporate', 'BusinessLine'].map((div) => (
                 <button
-                  key={dept}
+                  key={div}
                   type="button"
-                  onClick={() => setDepartmentFilter(dept)}
+                  onClick={() => { setDivisionFilter(div); setBusinessLineFilter('All'); }}
                   className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all border ${
-                    departmentFilter === dept
+                    divisionFilter === div
                       ? 'bg-indigo-500/15 border-indigo-500/40 text-indigo-300 font-semibold'
                       : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
                   }`}
                 >
-                  {dept === 'All' ? 'All Depts' : dept.split(' ')[0]}
+                  {div === 'BusinessLine' ? 'Business Line' : div}
                 </button>
               ))}
+
+              {divisionFilter === 'BusinessLine' && (
+                <>
+                  <span className="text-slate-500 font-bold uppercase tracking-wider text-[10px] flex items-center gap-1 ml-2">
+                    <Layers className="w-3.5 h-3.5 text-pink-400" /> Business Line:
+                  </span>
+                  {['All', 'Insurance', 'Banking', 'Healthcare', 'Retail', 'Telecom'].map((bl) => (
+                    <button
+                      key={bl}
+                      type="button"
+                      onClick={() => setBusinessLineFilter(bl)}
+                      className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all border ${
+                        businessLineFilter === bl
+                          ? 'bg-pink-500/15 border-pink-500/40 text-pink-300 font-semibold'
+                          : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      {bl}
+                    </button>
+                  ))}
+                </>
+              )}
             </div>
 
             <div className="text-[11px] font-mono text-slate-500 flex items-center gap-1">
@@ -543,20 +559,31 @@ export const SearchDashboard: React.FC<SearchDashboardProps> = ({
 
               {expandedCitations && (
                 <div className="flex flex-wrap gap-3 pt-1">
-                  {activeResponse.citations.map((cit) => (
-                    <div
-                      key={cit.id}
+                  {activeResponse.citations.map((cit, idx) => {
+                    const hash = cit.page_number ? `#page=${cit.page_number}` : (cit.timestamp ? `#t=${cit.timestamp}` : '');
+                    const previewUrl = `${backendUrl}/documents/${cit.document_id}/preview?token=${user?.token}${hash}`;
+                    return (
+                    <a
+                      href={previewUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      key={cit.document_id + idx}
                       className="px-3.5 py-2.5 bg-white/5 border border-white/10 rounded-xl flex items-center gap-3 cursor-pointer hover:bg-white/10 transition-colors"
                     >
-                      <div className="w-7 h-7 rounded bg-slate-800 flex items-center justify-center text-[10px] font-mono text-indigo-300 font-bold">
-                        {cit.source.endsWith('.pdf') ? 'PDF' : 'MD'}
+                      <div className="w-7 h-7 rounded bg-slate-800 flex items-center justify-center text-[10px] font-mono text-indigo-300 font-bold uppercase">
+                        {cit.file_type}
                       </div>
                       <div>
-                        <p className="text-[11px] text-slate-300 font-medium">{cit.title}</p>
-                        <p className="text-[10px] text-slate-500 font-mono">{cit.source} • {(cit.score * 100).toFixed(0)}% match</p>
+                        <p className="text-[11px] text-slate-300 font-medium">{cit.document_name}</p>
+                        <p className="text-[10px] text-slate-500 font-mono">
+                          {cit.page_number && `Pg ${cit.page_number}`}
+                          {cit.page_number && cit.timestamp && ' • '}
+                          {cit.timestamp && `Time: ${cit.timestamp}`}
+                          {!cit.page_number && !cit.timestamp && 'Source File'}
+                        </p>
                       </div>
-                    </div>
-                  ))}
+                    </a>
+                  )})}
                 </div>
               )}
             </div>

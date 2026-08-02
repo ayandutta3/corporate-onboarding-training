@@ -16,6 +16,27 @@ router = APIRouter(prefix="/documents", tags=["Documents"])
 
 class DocumentUpdate(BaseModel):
     title: Optional[str] = None
+    division: Optional[str] = None
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, Request
+from fastapi.responses import FileResponse, StreamingResponse
+from app.authentication.dependencies import get_current_user, RequireRole
+from app.authentication.models import UserInDB, Role
+from motor.motor_asyncio import AsyncIOMotorDatabase
+from app.repository.database import get_database
+from app.ingestion.repository import DocumentRepository, DocumentChunkRepository
+from app.ingestion.models import DocumentModel
+from app.vector.repository import VectorRepository
+from typing import Optional
+from pydantic import BaseModel
+import os
+import mimetypes
+
+router = APIRouter(prefix="/documents", tags=["Documents"])
+
+class DocumentUpdate(BaseModel):
+    title: Optional[str] = None
+    division: Optional[str] = None
+    businessLine: Optional[str] = None
     department: Optional[str] = None
     knowledge_type: Optional[str] = None
 
@@ -23,8 +44,8 @@ class DocumentUpdate(BaseModel):
 async def get_documents(
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
-    department: Optional[str] = None,
-    knowledge_type: Optional[str] = None,
+    division: Optional[str] = None,
+    businessLine: Optional[str] = None,
     version: Optional[int] = None,
     uploaded_by: Optional[str] = None,
     status: Optional[str] = None,
@@ -35,9 +56,25 @@ async def get_documents(
     repo = DocumentRepository(db)
     query = {}
     
+    if current_user.role != Role.ADMIN:
+        division_or_clauses = [{"division": "Corporate"}]
+        if current_user.division == "BusinessLine" and current_user.businessLine:
+            division_or_clauses.append({
+                "division": "BusinessLine",
+                "businessLine": current_user.businessLine
+            })
+        query["$or"] = division_or_clauses
+        
     # Apply filters
-    if department: query["department"] = department
-    if knowledge_type: query["knowledge_type"] = knowledge_type
+    if division: 
+        if "$and" not in query:
+            query["$and"] = []
+        query["$and"].append({"division": division})
+        
+    if businessLine:
+        if "$and" not in query:
+            query["$and"] = []
+        query["$and"].append({"businessLine": businessLine})
     if version: query["version"] = version
     if uploaded_by: query["uploaded_by"] = uploaded_by
     if status: query["status"] = status
@@ -45,14 +82,18 @@ async def get_documents(
     # Search functionality
     if search:
         search_regex = {"$regex": search, "$options": "i"}
-        query["$or"] = [
+        search_or_clause = {"$or": [
             {"filename": search_regex},
             {"title": search_regex},
             {"ai_tags": search_regex},
-            {"knowledge_type": search_regex},
+            {"division": search_regex},
+            {"businessLine": search_regex},
             {"department": search_regex},
             {"uploaded_by": search_regex}
-        ]
+        ]}
+        if "$and" not in query:
+            query["$and"] = []
+        query["$and"].append(search_or_clause)
         
     # Get total count and paginated items
     total_count = await repo.collection.count_documents(query)
@@ -81,6 +122,12 @@ async def get_document(
     doc = await repo.get(document_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
+        
+    if current_user.role != Role.ADMIN:
+        if doc.division == "BusinessLine":
+            if current_user.division != "BusinessLine" or current_user.businessLine != doc.businessLine:
+                raise HTTPException(status_code=403, detail="Not authorized to access this document")
+                
     return doc.model_dump(by_alias=True)
 
 def _get_file_mime_type(file_path: str):
@@ -101,6 +148,14 @@ async def preview_document(
     if not doc or not os.path.exists(doc.file_path):
         raise HTTPException(status_code=404, detail="File not found")
         
+    # RBAC Validation
+    if current_user.role != Role.ADMIN:
+        if doc.access_roles and len(doc.access_roles) > 0 and current_user.role.value not in doc.access_roles:
+            raise HTTPException(status_code=403, detail="Not authorized to access this document")
+        if doc.division == "BusinessLine":
+            if current_user.division != "BusinessLine" or current_user.businessLine != doc.businessLine:
+                raise HTTPException(status_code=403, detail="Not authorized to access this document")
+            
     mime_type = _get_file_mime_type(doc.file_path)
     
     # For video/audio streaming, support range requests
@@ -139,6 +194,11 @@ async def download_document(
     doc = await repo.get(document_id)
     if not doc or not os.path.exists(doc.file_path):
         raise HTTPException(status_code=404, detail="File not found")
+        
+    if current_user.role != Role.ADMIN:
+        if doc.division == "BusinessLine":
+            if current_user.division != "BusinessLine" or current_user.businessLine != doc.businessLine:
+                raise HTTPException(status_code=403, detail="Not authorized to access this document")
         
     mime_type = _get_file_mime_type(doc.file_path)
     return FileResponse(doc.file_path, media_type=mime_type, filename=doc.filename, content_disposition_type="attachment")
@@ -192,12 +252,9 @@ async def update_document(
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
         
-    if update_data.title is not None:
-        doc.title = update_data.title
-    if update_data.department is not None:
-        doc.department = update_data.department
-    if update_data.knowledge_type is not None:
-        doc.knowledge_type = update_data.knowledge_type
+    if update_data.title is not None: doc.title = update_data.title
+    if update_data.division is not None: doc.division = update_data.division
+    if update_data.businessLine is not None: doc.businessLine = update_data.businessLine
         
     await repo.update(doc)
     return doc.model_dump(by_alias=True)

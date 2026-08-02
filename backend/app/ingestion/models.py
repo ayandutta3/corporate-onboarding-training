@@ -7,7 +7,8 @@ class DocumentModel(MongoBaseModel):
     file_path: str
     uploaded_by: str
     department: str
-    knowledge_type: str
+    division: str
+    businessLine: Optional[str] = None
     title: Optional[str] = None
     description: Optional[str] = None
     extracted_text: Optional[str] = None
@@ -27,4 +28,5 @@ class DocumentChunkModel(MongoBaseModel):
     version: int = 1
     uploaded_by: str
     department: str
-    knowledge_type: str
+    division: str
+    businessLine: Optional[str] = None

@@ -28,14 +28,14 @@ class SemanticCacheService:
     def clear(self):
         self.cache = []
 
-    async def get(self, query: str, role: str, mode: str) -> Optional[Dict[str, Any]]:
+    async def get(self, query: str, user_id: str, mode: str) -> Optional[Dict[str, Any]]:
         query_embedding, _ = await self.embedding_service.generate_embedding(query)
         
         best_match = None
         best_score = 0.0
 
         for entry in self.cache:
-            if entry["role"] == role and entry["mode"] == mode:
+            if entry.get("user_id") == user_id and entry.get("mode") == mode:
                 sim = self._cosine_similarity(query_embedding, entry["embedding"])
                 if sim >= self.threshold and sim > best_score:
                     best_score = sim
@@ -52,11 +52,11 @@ class SemanticCacheService:
             
         return None
 
-    async def put(self, query: str, role: str, mode: str, answer: str, citations: List[Any], ragas_metrics: Optional[Any] = None):
+    async def put(self, query: str, user_id: str, mode: str, answer: str, citations: List[Any], ragas_metrics: Optional[Any] = None):
         query_embedding, _ = await self.embedding_service.generate_embedding(query)
         self.cache.append({
             "query": query,
-            "role": role,
+            "user_id": user_id,
             "mode": mode,
             "embedding": query_embedding,
             "answer": answer,

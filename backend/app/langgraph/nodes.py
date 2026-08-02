@@ -55,7 +55,11 @@ async def metadata_search(state: GraphState) -> GraphState:
     candidates = await metadata_service.get_candidate_documents(
         role=role_filter,
         department=request.department,
-        knowledge_type=request.knowledge_type,
+        division=getattr(request, 'division', None),
+        businessLine=getattr(request, 'businessLine', None),
+        user_division=user.division,
+        user_businessLine=user.businessLine,
+        is_admin=(user.role.value == "admin"),
         status=request.status,
         version=request.version
     )
@@ -71,7 +75,7 @@ async def keyword_search(state: GraphState) -> GraphState:
         
     # A simple fallback keyword search over candidate docs metadata/summary since OpenSearch is removed
     query_lower = state["request"].query.lower()
-    query_words = {word for word in query_lower.replace("?", "").replace(".", "").split() if len(word) > 3}
+    query_words = {word for word in query_lower.replace("?", "").replace(".", "").split() if len(word) > 1}
     filtered_candidates = []
     
     for doc in state["candidate_docs"]:
@@ -94,7 +98,7 @@ async def keyword_search(state: GraphState) -> GraphState:
         if match:
             filtered_candidates.append(doc)
             
-    # We use keyword search as a strict filter. If no matches, we stop and don't fallback.
+    # We use keyword search as a strict filter per requirements. If no matches, we stop and don't fallback.
     state["candidate_docs"] = filtered_candidates
         
     return state
@@ -110,9 +114,24 @@ async def vector_search(state: GraphState) -> GraphState:
         vector_repo = VectorRepository()
         embedding_service = EmbeddingService()
         
+        user = state["user"]
+        is_admin = user.role.value == "admin"
+        where = None
+        
+        if not is_admin:
+            if user.division == "BusinessLine" and user.businessLine:
+                where = {
+                    "$or": [
+                        {"division": "Corporate"},
+                        {"businessLine": user.businessLine}
+                    ]
+                }
+            else:
+                where = {"division": "Corporate"}
+                
         query_embedding, embedding_time_ms = await embedding_service.generate_embedding(request.query)
         start_time = time.time()
-        results = vector_repo.search(query_embedding=query_embedding, top_k=request.top_k)
+        results = vector_repo.search(query_embedding=query_embedding, top_k=request.top_k, where=where)
         retrieval_time_ms = int((time.time() - start_time) * 1000)
         
         documents = results.get("documents", [[]])[0]
@@ -173,10 +192,16 @@ async def prompt_builder(state: GraphState) -> GraphState:
         context_text += f"\n--- Source {i+1} ---\n{scrubbed_doc}\n"
         
         doc_name = meta.get("document_name", "Unknown")
+        doc_id = meta.get("document_id", "")
         if doc_name not in seen_documents:
             seen_documents.add(doc_name)
+            
+            file_extension = doc_name.split('.')[-1].lower() if '.' in doc_name else "txt"
+            
             citations.append(Citation(
+                document_id=doc_id,
                 document_name=doc_name,
+                file_type=file_extension,
                 version=meta.get("version"),
                 page_number=meta.get("page_number"),
                 section=meta.get("section"),

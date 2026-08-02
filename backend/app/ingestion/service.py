@@ -20,20 +20,31 @@ class IngestionService:
         
     def _determine_metadata_from_role(self, role: Role):
         if role == Role.ADMIN:
-            return "Management", "Policies"
+            return "Management"
         elif role == Role.HR:
-            return "HR", "Policies"
+            return "HR"
         elif role == Role.FINANCE_MANAGER:
-            return "Finance", "Financials"
+            return "Finance"
         elif role == Role.TECHNICAL_MANAGER:
-            return "Engineering", "Technical"
-        return "General", "General"
+            return "Engineering"
+        return "General"
 
-    async def process_upload(self, file: UploadFile, user: UserInDB, pipeline_type: str, title: str = None, description: str = None, version: int = 1, requested_department: str = None, user_tags_str: str = None, autofill_tags: bool = True, override_summary: str = None, override_tags: list[str] = None):
-        department, knowledge_type = self._determine_metadata_from_role(user.role)
+    async def process_upload(self, file: UploadFile, user: UserInDB, pipeline_type: str, title: str = None, description: str = None, version: int = 1, requested_department: str = None, requested_division: str = None, requested_businessLine: str = None, user_tags_str: str = None, autofill_tags: bool = True, override_summary: str = None, override_tags: list[str] = None):
+        department = self._determine_metadata_from_role(user.role)
         
-        if user.role == Role.ADMIN and requested_department:
-            department = requested_department
+        division = user.division or "Corporate"
+        businessLine = user.businessLine
+        
+        if user.role == Role.ADMIN:
+            if requested_department:
+                department = requested_department
+            if requested_division:
+                division = requested_division
+            if requested_businessLine:
+                businessLine = requested_businessLine
+                
+        if division == "Corporate":
+            businessLine = None
         
         # 1. Save Original File
         file_id = str(uuid.uuid4())
@@ -68,8 +79,9 @@ class IngestionService:
             file_path=dest_path,
             uploaded_by=user.email,
             department=department,
-            knowledge_type=knowledge_type,
-            title=title,
+            division=division,
+            businessLine=businessLine,
+            title=title or file.filename,
             description=description,
             extracted_text=extracted_text,
             ai_summary=summary,

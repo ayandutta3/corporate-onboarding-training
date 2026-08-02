@@ -1,0 +1,73 @@
+# Corporate Onboarding & Training - Hackathon Presentation Speech
+
+## 1. Elevator Pitch (1 Minute)
+
+"Hello everyone! We’re excited to present the **Corporate Onboarding & Training Intelligence Hub**. In large enterprises, finding the right policy or training material is like finding a needle in a haystack—and worse, employees often accidentally stumble upon confidential documents meant for other departments. 
+
+Our solution is a fully secure, Agentic AI-powered Knowledge Management platform. It uses Retrieval-Augmented Generation (RAG) orchestrated by LangGraph to answer employee questions instantly. But here's the differentiator: it’s built with strict, division-based Role-Based Access Control right down to the vector database level. An engineer will only see engineering policies, while HR sees corporate policies. With multi-modal uploads for PDFs and audio, clickable source citations, a highly efficient Hybrid search engine, personalized Semantic Caching, and automated RAGAS quality evaluations, we've built a platform that scales enterprise knowledge securely, intelligently, and cost-effectively."
+
+---
+
+## 2. Full Presentation Speech (5–7 Minutes)
+
+### Introduction (1 minute)
+"Hi everyone, my name is [Your Name/Team Name], and today I’m thrilled to introduce you to our project: The Corporate Onboarding & Training Intelligence Hub.
+
+If you’ve ever joined a large enterprise, you know the pain of onboarding. You have dozens of questions: *'What’s the travel policy?'*, *'How do I set up my VPN?'*, *'What are my division's specific compliance rules?'* Usually, finding these answers means digging through endless intranet pages or pinging busy colleagues.
+
+Even worse, standard enterprise search tools are notoriously bad at understanding context, and they often suffer from security flaws where employees can search and find documents from business lines they have no business seeing. We set out to solve this by building a secure, intelligent, and context-aware conversational search engine."
+
+### Solution Overview & Technical Highlights (1.5 minutes)
+"To solve this, we built a full-stack Agentic AI application using React on the frontend and FastAPI on the backend. 
+
+At the heart of our platform is a RAG pipeline orchestrated by **LangGraph**. Instead of basic similarity search, LangGraph acts as a deterministic state machine that carefully curates how information is retrieved. For our databases, we use **MongoDB** for strict metadata storage and **ChromaDB** for our high-performance vector index.
+
+One of the biggest architectural decisions we made was moving away from standard RAG to implement a secure **Hybrid Search with Lazy Embedding**. Computing embeddings for millions of documents is incredibly expensive. Our Hybrid approach uses strict metadata and keyword pre-filtering in MongoDB *before* any semantic search occurs. If a document passes the filter, we lazily embed it on the fly. This drastically reduces OpenAI API costs while maintaining hyper-accurate search results."
+
+### Key Features & Demo Flow (2 minutes)
+"Let me walk you through how it works. 
+
+**[Demo Step 1: User Onboarding]**
+First, we have a robust onboarding workflow. Our HR persona can log in and provision a new user, assigning them to a specific 'Business Line'—like Insurance or Retail. A Technical Manager then securely reviews and approves this user.
+
+**[Demo Step 2: Knowledge Upload]**
+Next, administrators can upload knowledge. And we don't just support PDFs—you can upload audio or video. Our backend automatically uses Whisper to transcribe the media, extracts the text, and uses an LLM to auto-generate a summary and searchable AI tags before chunking it into our databases.
+
+**[Demo Step 3: Secure Search]**
+Now, the new user logs in and asks a question. This is where our strict Division-Based Access Control shines. If an Insurance employee asks about 'Commission Policies', the MongoDB query dynamically injects RBAC filters. The AI will *only* retrieve and synthesize policies from the Corporate division or the Insurance business line. Retail policies are physically blocked at the database level.
+
+**[Demo Step 4: Citations, Caching & Observability]**
+When the AI answers, it doesn’t just give you raw text. It provides clickable source citations. You can click the citation, and our Policy Hub will securely stream the exact source document directly in the browser so you can verify the information yourself. 
+
+Even better, we've implemented an intelligent **Semantic Caching** layer. If another employee asks the exact same question, the system checks their identity and fetches the cached answer instantly, bypassing the LLM completely to save costs and reduce latency by 90%.
+
+Behind the scenes, every single query is tracked via our **Langfuse observability dashboard**. But we didn't stop at just logging tokens—we integrated the **RAGAS (RAG Assessment)** framework. Every single answer generated by our AI is automatically evaluated in real-time for Faithfulness, Context Precision, and Answer Relevancy, ensuring our AI maintains strict enterprise quality standards."
+
+### Business Value (1 minute)
+"The business value here is immense. 
+1. **Security**: We lock down enterprise knowledge natively at the vector and database layer.
+2. **Productivity**: We reduce onboarding and search time from hours to seconds.
+3. **Trust & Quality**: By providing clickable citations and automating quality control via RAGAS evaluations, employees and admins can implicitly trust the AI.
+4. **Cost-Efficiency**: With Lazy Embedding and our per-user Semantic Caching, we reduce redundant LLM calls by up to 90%, making this an incredibly cheap solution to run at scale."
+
+### Conclusion (30 seconds)
+"In conclusion, we haven't just built a basic wrapper around an LLM. We've built an enterprise-ready, highly secure, and observable AI knowledge platform that solves real bottlenecks in corporate training and onboarding. Thank you, and we’d be happy to take any questions!"
+
+---
+
+## 3. Likely Judge Questions & Suggested Answers
+
+**Q1: How do you ensure that the AI doesn't hallucinate or provide wrong policy information?**
+*Answer:* "We tackle hallucinations in two ways. First, our prompt engineering strictly instructs the LLM to answer *only* using the retrieved context. If the answer isn't in the documents, it admits it doesn't know. Second, we provide exact, clickable source citations mapped directly to the document ID. Users can instantly verify the AI's answer against the source truth in the UI."
+
+**Q2: You mentioned 'Lazy Embedding' for Hybrid Search. How does that work and why not use OpenSearch/ElasticSearch?**
+*Answer:* "Standard vector databases embed every single document upfront, which gets very expensive at an enterprise scale. In our Hybrid Search pipeline, we first use a strict metadata and keyword filter in MongoDB to whittle down the candidate documents to a tiny subset. Only then do we use a Lazy Embedding Service to embed those specific chunks on the fly and perform a semantic reranking. This provides the accuracy of semantic search with a fraction of the token cost without needing to spin up a heavy OpenSearch cluster."
+
+**Q3: How is data security and RBAC handled when the AI retrieves documents?**
+*Answer:* "Security is handled *before* the LLM even sees the data. When a user makes a query, our backend constructs a dynamic filter based on their JWT token profile (e.g., their Division and Business Line). This filter is injected directly into the MongoDB query or ChromaDB `where` clause. If an employee doesn't have access to a business line, those vectors are completely excluded from the search pool. They literally do not exist to the AI."
+
+**Q4: Why did you use LangGraph instead of a standard LangChain agent?**
+*Answer:* "We chose LangGraph because enterprise workflows require deterministic control. Instead of relying on a black-box agent to guess what tools to use, LangGraph allows us to define a strict state machine (Intent Detection -> Metadata Filter -> Vector Search -> Generate Response). It makes our retrieval pipeline highly predictable, debuggable, and stable."
+
+**Q5: What happens if two users ask the exact same question?**
+*Answer:* "We implemented a Semantic Cache Service. If a user asks a question, we embed the query and check the cache. If they ask a semantically similar question again (cosine similarity > 0.92), we return the cached response instantly. Crucially, this cache is tightly scoped by `user.email` to prevent cross-user data leakage, ensuring users only hit cache for data they are personally authorized to see."

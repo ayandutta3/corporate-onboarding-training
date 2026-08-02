@@ -47,7 +47,8 @@ export const UploadPortal: React.FC<UploadPortalProps> = ({
 
   // CRITICAL REQUIRED UI TOGGLE SWITCH: Vector Ingestion vs Hybrid Ingestion
   const [ingestionMode, setIngestionMode] = useState<IngestionMode>('hybrid');
-  const [selectedDepartment, setSelectedDepartment] = useState(getDefaultDepartment(user.role));
+  const [selectedDivision, setSelectedDivision] = useState(user.division || 'Corporate');
+  const [selectedBusinessLine, setSelectedBusinessLine] = useState(user.businessLine || '');
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [docTitle, setDocTitle] = useState('');
@@ -99,7 +100,8 @@ export const UploadPortal: React.FC<UploadPortalProps> = ({
       const doc = await uploadDocument(
         selectedFile,
         ingestionMode,
-        selectedDepartment,
+        selectedDivision,
+        selectedBusinessLine,
         user.token || 'demo-token',
         backendUrl,
         docTitle,
@@ -232,30 +234,55 @@ export const UploadPortal: React.FC<UploadPortalProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-black/40 p-4 rounded-2xl border border-white/5">
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5 flex items-center gap-1">
-                <Building2 className="w-3.5 h-3.5 text-purple-400" /> Department Metadata Tag
+                <Building2 className="w-3.5 h-3.5 text-purple-400" /> Division Tag
               </label>
               <select
-                value={selectedDepartment}
-                onChange={(e) => setSelectedDepartment(e.target.value)}
+                value={selectedDivision}
+                onChange={(e) => {
+                  setSelectedDivision(e.target.value);
+                  if (e.target.value === 'Corporate') {
+                    setSelectedBusinessLine('');
+                  }
+                }}
                 disabled={user.role !== 'admin'}
                 className={`w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 font-mono ${user.role !== 'admin' ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
-                <option value="Corporate Finance & Ops" className="bg-[#0e1117]">Corporate Finance & Ops</option>
-                <option value="HR" className="bg-[#0e1117]">HR</option>
-                <option value="Engineering" className="bg-[#0e1117]">Engineering</option>
-                <option value="Finance" className="bg-[#0e1117]">Finance</option>
-                <option value="Hidden / Read Only" className="bg-[#0e1117]" disabled>Hidden / Read Only</option>
+                <option value="Corporate" className="bg-[#0e1117]">Corporate</option>
+                <option value="BusinessLine" className="bg-[#0e1117]">Business Line</option>
               </select>
             </div>
-
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5 flex items-center gap-1">
-                <Database className="w-3.5 h-3.5 text-indigo-400" /> Target Endpoint
-              </label>
-              <div className="px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-xs font-mono text-indigo-300">
-                {ingestionMode === 'hybrid' ? 'POST /upload/hybrid' : 'POST /upload/vector'}
+            
+            {selectedDivision === 'BusinessLine' && (
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5 flex items-center gap-1">
+                  <Database className="w-3.5 h-3.5 text-indigo-400" /> Business Line
+                </label>
+                <select
+                  value={selectedBusinessLine}
+                  onChange={(e) => setSelectedBusinessLine(e.target.value)}
+                  disabled={user.role !== 'admin'}
+                  className={`w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 font-mono ${user.role !== 'admin' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  <option value="" className="bg-[#0e1117]" disabled>Select Business Line</option>
+                  <option value="Insurance" className="bg-[#0e1117]">Insurance</option>
+                  <option value="Banking" className="bg-[#0e1117]">Banking</option>
+                  <option value="Healthcare" className="bg-[#0e1117]">Healthcare</option>
+                  <option value="Retail" className="bg-[#0e1117]">Retail</option>
+                  <option value="Telecom" className="bg-[#0e1117]">Telecom</option>
+                </select>
               </div>
-            </div>
+            )}
+            
+            {selectedDivision !== 'BusinessLine' && (
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5 flex items-center gap-1">
+                  <Database className="w-3.5 h-3.5 text-indigo-400" /> Target Endpoint
+                </label>
+                <div className="px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-xs font-mono text-indigo-300">
+                  {ingestionMode === 'hybrid' ? 'POST /upload/hybrid' : 'POST /upload/vector'}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Title, Description, and Custom Tags metadata form */}
@@ -420,7 +447,7 @@ export const UploadPortal: React.FC<UploadPortalProps> = ({
                 Document Ingested: {lastUploadedDoc.fileName}
               </p>
               <p className="text-slate-300 font-mono">
-                Created {lastUploadedDoc.chunksCount} chunks tagged for '{lastUploadedDoc.department}' using endpoint '{lastUploadedDoc.mode === 'hybrid' ? '/upload/hybrid' : '/upload/vector'}'. Vector ID: {lastUploadedDoc.vectorId}.
+                Created {lastUploadedDoc.chunksCount} chunks tagged for '{lastUploadedDoc.division}' using endpoint '{lastUploadedDoc.mode === 'hybrid' ? '/upload/hybrid' : '/upload/vector'}'. Vector ID: {lastUploadedDoc.vectorId}.
               </p>
             </div>
           </div>
@@ -442,7 +469,7 @@ export const UploadPortal: React.FC<UploadPortalProps> = ({
             <thead>
               <tr className="border-b border-slate-800 text-[11px] font-mono text-slate-400 uppercase tracking-wider">
                 <th className="py-3 px-4">Document Name</th>
-                <th className="py-3 px-4">Department</th>
+                <th className="py-3 px-4">Division</th>
                 <th className="py-3 px-4">Ingestion API</th>
                 <th className="py-3 px-4">Chunks</th>
                 <th className="py-3 px-4">Uploaded By</th>
@@ -456,7 +483,12 @@ export const UploadPortal: React.FC<UploadPortalProps> = ({
                     <FileText className="w-4 h-4 text-cyan-400 shrink-0" />
                     <span className="truncate max-w-xs">{doc.fileName}</span>
                   </td>
-                  <td className="py-3 px-4 text-slate-300">{doc.department}</td>
+                  <td className="py-3 px-4 text-slate-300">
+                    <div className="flex flex-col">
+                      <span>{doc.division || 'Corporate'}</span>
+                      {doc.businessLine && <span className="text-[10px] text-amber-300">{doc.businessLine}</span>}
+                    </div>
+                  </td>
                   <td className="py-3 px-4">
                     <span
                       className={`px-2 py-0.5 rounded text-[10px] font-bold ${

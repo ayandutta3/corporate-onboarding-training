@@ -6,7 +6,9 @@ class SearchRequest(BaseModel):
     top_k: int = 5
 
 class Citation(BaseModel):
+    document_id: str = ""
     document_name: str
+    file_type: str = "txt"
     version: Optional[int] = None
     page_number: Optional[int] = None
     section: Optional[str] = None
@@ -16,7 +18,8 @@ class HybridSearchRequest(BaseModel):
     query: str
     top_k: int = 5
     department: Optional[str] = None
-    knowledge_type: Optional[str] = None
+    division: Optional[str] = None
+    businessLine: Optional[str] = None
     access_roles: Optional[str] = None
     status: Optional[str] = None
     version: Optional[int] = None

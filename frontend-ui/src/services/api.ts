@@ -114,7 +114,8 @@ export async function createUser(
 export async function uploadDocument(
   file: File,
   mode: 'vector' | 'hybrid',
-  department: string,
+  division?: string,
+  businessLine?: string,
   token: string,
   backendUrl: string = DEFAULT_BACKEND_URL,
   title?: string,
@@ -128,8 +129,8 @@ export async function uploadDocument(
   
   const formData = new FormData();
   formData.append('file', file);
-  // Backend infers department from JWT, but we send it just in case.
-  formData.append('department', department);
+  if (division) formData.append('division', division);
+  if (businessLine) formData.append('businessLine', businessLine);
   if (title) formData.append('title', title);
   if (description) formData.append('description', description);
   if (tags) formData.append('tags', tags);
@@ -206,7 +207,8 @@ export async function searchRAG(
   // Construct request body based on mode
   const requestBody: any = { query, top_k: 5 };
   if (mode === 'hybrid') {
-    if (filters.department) requestBody.department = filters.department;
+    if (filters.division) requestBody.division = filters.division;
+    if (filters.businessLine) requestBody.businessLine = filters.businessLine;
     // Map any other frontend filters to backend HybridSearchRequest
   }
 
@@ -227,14 +229,14 @@ export async function searchRAG(
   
   const searchResp: SearchResponse = {
     answer: data.answer || 'No answer provided.',
-    citations: (data.citations || []).map((c: any, i: number) => ({
-      id: `cit-${i}`,
-      title: c.section || c.document_name || 'Document Reference',
-      source: c.document_name || 'Unknown',
-      department: 'Corporate',
-      score: c.relevance_score || 0.95,
-      excerpt: c.text || '',
-      pageNumber: c.page_number,
+    citations: (data.citations || []).map((c: any) => ({
+      document_id: c.document_id || '',
+      document_name: c.document_name || 'Unknown',
+      file_type: c.file_type || 'txt',
+      version: c.version,
+      page_number: c.page_number,
+      section: c.section,
+      timestamp: c.timestamp,
     })),
     metrics: data.metrics || {
       prompt_tokens: 0,

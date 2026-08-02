@@ -22,7 +22,8 @@ export const PolicyHub: React.FC<PolicyHubProps> = ({ user, backendUrl }) => {
   const [totalCount, setTotalCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [deptFilter, setDeptFilter] = useState('');
-  const [typeFilter, setTypeFilter] = useState('');
+  const [divisionFilter, setDivisionFilter] = useState('');
+  const [businessLineFilter, setBusinessLineFilter] = useState('');
   
   // Preview state
   const [previewDoc, setPreviewDoc] = useState<{id: string, name: string} | null>(null);
@@ -35,7 +36,8 @@ export const PolicyHub: React.FC<PolicyHubProps> = ({ user, backendUrl }) => {
         size: 10,
         search: searchQuery,
         department: deptFilter,
-        knowledge_type: typeFilter
+        division: divisionFilter,
+        businessLine: businessLineFilter
       });
       setDocuments(data.items);
       setTotalPages(data.pages);
@@ -49,7 +51,7 @@ export const PolicyHub: React.FC<PolicyHubProps> = ({ user, backendUrl }) => {
 
   useEffect(() => {
     loadDocuments();
-  }, [page, deptFilter, typeFilter]);
+  }, [page, deptFilter, divisionFilter, businessLineFilter]);
   
   // Reload when search query changes after a delay
   useEffect(() => {
@@ -140,18 +142,34 @@ export const PolicyHub: React.FC<PolicyHubProps> = ({ user, backendUrl }) => {
             </select>
           </div>
 
-          <div className="relative">
-            <Filter className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
-            <select
-              value={typeFilter}
-              onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }}
-              className="w-full pl-9 pr-4 py-2 bg-white/5 border border-white/10 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500 appearance-none"
+          <div className="flex flex-wrap gap-3 mt-4">
+            <select 
+              value={divisionFilter}
+              onChange={(e) => {
+                setDivisionFilter(e.target.value);
+                setPage(1);
+              }}
+              className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-indigo-500/50"
             >
-              <option value="" className="bg-[#0e1117]">All Types</option>
-              <option value="Policies" className="bg-[#0e1117]">Policies</option>
-              <option value="Financials" className="bg-[#0e1117]">Financials</option>
-              <option value="Technical" className="bg-[#0e1117]">Technical</option>
-              <option value="General" className="bg-[#0e1117]">General</option>
+              <option value="">All Divisions</option>
+              <option value="Corporate">Corporate</option>
+              <option value="BusinessLine">Business Line</option>
+            </select>
+            
+            <select 
+              value={businessLineFilter}
+              onChange={(e) => {
+                setBusinessLineFilter(e.target.value);
+                setPage(1);
+              }}
+              className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-indigo-500/50"
+            >
+              <option value="">All Business Lines</option>
+              <option value="Insurance">Insurance</option>
+              <option value="Banking">Banking</option>
+              <option value="Healthcare">Healthcare</option>
+              <option value="Retail">Retail</option>
+              <option value="Telecom">Telecom</option>
             </select>
           </div>
         </div>
@@ -196,14 +214,16 @@ export const PolicyHub: React.FC<PolicyHubProps> = ({ user, backendUrl }) => {
                       </div>
                     </div>
                   </td>
-                  <td className="py-3 px-4">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-1.5 text-xs text-slate-300">
-                        <Building2 className="w-3.5 h-3.5 text-purple-400" /> {doc.department}
-                      </div>
-                      <div className="text-xs text-slate-400 pl-5">
-                        {doc.knowledge_type}
-                      </div>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-1 bg-indigo-500/10 text-indigo-300 text-xs rounded border border-indigo-500/20">
+                        {doc.division || 'Unknown'}
+                      </span>
+                      {doc.businessLine && (
+                        <span className="px-2 py-1 bg-amber-500/10 text-amber-300 text-xs rounded border border-amber-500/20">
+                          {doc.businessLine}
+                        </span>
+                      )}
                     </div>
                   </td>
                   <td className="py-3 px-4 text-slate-300">

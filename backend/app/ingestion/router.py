@@ -27,6 +27,8 @@ async def upload_vector(
     title: Optional[str] = Form(None),
     description: Optional[str] = Form(None),
     department: Optional[str] = Form(None),
+    division: Optional[str] = Form(None),
+    businessLine: Optional[str] = Form(None),
     tags: Optional[str] = Form(None),
     autofill_tags: Optional[bool] = Form(True),
     version: Optional[int] = Form(1),
@@ -35,7 +37,7 @@ async def upload_vector(
 ):
     validate_file(file)
     service = IngestionService(db)
-    doc = await service.process_upload(file, current_user, "vector", title=title, description=description, version=version, requested_department=department, user_tags_str=tags, autofill_tags=autofill_tags)
+    doc = await service.process_upload(file, current_user, "vector", title=title, description=description, version=version, requested_department=department, requested_division=division, requested_businessLine=businessLine, user_tags_str=tags, autofill_tags=autofill_tags)
     return {"message": "File processed via Vector pipeline", "document_id": doc.id}
 
 @router.post("/hybrid", summary="Upload Hybrid Document", description="Process and extract text from a document without generating embeddings immediately.", dependencies=[Depends(RequireRole([Role.ADMIN, Role.HR, Role.FINANCE_MANAGER, Role.TECHNICAL_MANAGER]))])
@@ -44,6 +46,8 @@ async def upload_hybrid(
     title: Optional[str] = Form(None),
     description: Optional[str] = Form(None),
     department: Optional[str] = Form(None),
+    division: Optional[str] = Form(None),
+    businessLine: Optional[str] = Form(None),
     tags: Optional[str] = Form(None),
     autofill_tags: Optional[bool] = Form(True),
     version: Optional[int] = Form(1),
@@ -59,7 +63,7 @@ async def upload_hybrid(
         override_tags_list = [t.strip() for t in override_tags.split(',') if t.strip()]
     doc = await service.process_upload(
         file, current_user, "hybrid", title=title, description=description, version=version,
-        requested_department=department, user_tags_str=tags, autofill_tags=autofill_tags,
+        requested_department=department, requested_division=division, requested_businessLine=businessLine, user_tags_str=tags, autofill_tags=autofill_tags,
         override_summary=override_summary, override_tags=override_tags_list
     )
     return {"message": "File processed via Hybrid pipeline", "document_id": doc.id}

@@ -39,7 +39,7 @@ async def search_vector(
     db: AsyncIOMotorDatabase = Depends(get_database)
 ):
     # Check 0.80 threshold Semantic Cache
-    cached_res = await cache_service.get(request.query, current_user.role.value, "vector")
+    cached_res = await cache_service.get(request.query, current_user.email, "vector")
     if cached_res:
         return SearchResponse(
             answer=cached_res["answer"],
@@ -90,8 +90,8 @@ async def search_vector(
     if final_state.get("final_answer"):
         ragas_data = final_state["metrics"].ragas_metrics if final_state.get("metrics") else None
         await cache_service.put(
-            query=request.query,
-            role=current_user.role.value,
+            query=request.query, 
+            user_id=current_user.email, 
             mode="vector",
             answer=final_state["final_answer"],
             citations=final_state["citations"],
@@ -111,7 +111,7 @@ async def search_hybrid(
     db: AsyncIOMotorDatabase = Depends(get_database)
 ):
     # Check 0.80 threshold Semantic Cache
-    cached_res = await cache_service.get(request.query, current_user.role.value, "hybrid")
+    cached_res = await cache_service.get(request.query, current_user.email, "hybrid")
     if cached_res:
         return SearchResponse(
             answer=cached_res["answer"],
@@ -162,8 +162,8 @@ async def search_hybrid(
     if final_state.get("final_answer"):
         ragas_data = final_state["metrics"].ragas_metrics if final_state.get("metrics") else None
         await cache_service.put(
-            query=request.query,
-            role=current_user.role.value,
+            query=request.query, 
+            user_id=current_user.email, 
             mode="hybrid",
             answer=final_state["final_answer"],
             citations=final_state["citations"],
