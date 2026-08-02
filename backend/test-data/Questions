@@ -1,0 +1,39 @@
+Q1: What financial support and allowance perks are available to remote workers?
+
+    Semantically Retrieved Documents: hr_doc_1.txt, hr_doc_2.txt, hr_doc_4.txt (due to high semantic overlap with "remote work", "perks", "stipend", and "employee benefits").
+
+    Actual Source Documents: hr_doc_8.txt
+
+    Answer: Remote workers receive a one-time home office setup budget of $750 and a $50/month internet subsidy.
+
+Q2: What options and benefits exist for employees needing extended leave beyond the standard PTO allocation?
+
+    Semantically Retrieved Documents: hr_doc_4.txt, hr_doc_1.txt, hr_doc_5.txt (matches "paid time off", "annual leave", "PTO allocation").
+
+    Actual Source Documents: hr_doc_7.txt
+
+    Answer: Employees with 5+ years of service can take up to 12 weeks of sabbatical at 50% base salary. Additionally, primary caregivers receive 16 weeks of fully paid parental leave, and staff in acute financial hardship can request a non-repayable Crisis Grant of up to $5,000.
+
+Q3: What executive compensation, health perks, and long-term incentives are offered to senior leadership?
+
+    Semantically Retrieved Documents: hr_doc_1.txt, hr_doc_5.txt (matches "compensation", "salary bands", "performance review", "health insurance").
+
+    Actual Source Documents: hr_doc_6.txt
+
+    Answer: Senior management (Director level and above) are eligible for an annual performance bonus of up to 35% of base salary tied to EBITDA. Executive equity (RSUs) vests over 4 years with a 1-year cliff (25% at Month 12, then quarterly), and leadership receives full international travel insurance and executive health concierge services.
+
+Q4: If a senior employee is impacted by corporate restructuring, what total departure package and relocation assistance do they receive?
+
+    Semantically Retrieved Documents: hr_doc_1.txt, hr_doc_3.txt, hr_doc_5.txt (matches "employee benefits", "conduct", "career growth").
+
+    Actual Source Documents: Combination of hr_doc_9.txt & hr_doc_10.txt
+
+    Answer: Under the relocation framework (hr_doc_9.txt), if an international assignment ends prematurely due to corporate restructuring, full return travel costs are covered by HR Mobility. Under exit benefits (hr_doc_10.txt), senior staff receive severance of 2 weeks per year of service (capped at 26 weeks), 3 months of COBRA health coverage subsidies, and 6 months of dedicated outplacement career coaching.
+
+Q5: What security compliance requirements and financial provisions apply to employees relocating internationally or working remotely?
+
+    Semantically Retrieved Documents: hr_doc_2.txt, hr_doc_1.txt, hr_doc_3.txt (matches "compliance training", "workplace policies", "remote work").
+
+    Actual Source Documents: Combination of hr_doc_8.txt & hr_doc_9.txt
+
+    Answer: Remote employees must use full-disk encryption and hardware 2FA keys, and are prohibited from using public Wi-Fi without an approved VPN (hr_doc_8.txt). Relocating employees receive 60 days of temporary housing, up to $10,000 for shipping personal effects, tax advisory services, and up to 40 hours of language instruction for themselves and their spouse (hr_doc_9.txt).

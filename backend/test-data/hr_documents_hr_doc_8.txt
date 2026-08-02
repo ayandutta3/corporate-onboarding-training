@@ -1,0 +1,6 @@
+DOCUMENT 8: Cyber Security Incident Response & Remote Work Security Policy
+Title: Information Security Protocols for Distributed & Work-From-Home Staff
+Details:
+- Remote Hardware: Company-issued laptops must use full-disk encryption and strict 2FA via hardware keys.
+- Wi-Fi Guidelines: Working from public/unencrypted Wi-Fi networks without an approved company VPN is strictly prohibited.
+- Security Stipend: Employees in remote-first roles receive a one-time home office setup budget of $750 plus a $50/month internet subsidy.

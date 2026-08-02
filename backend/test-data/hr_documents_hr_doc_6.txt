@@ -1,0 +1,6 @@
+DOCUMENT 6: Confidential HR Addendum - Special Executive Compensation & Equity Vesting
+Title: Executive Benefits & Stock Grant Vesting Mechanics
+Details:
+- Executive Bonus Structure: Senior Management (Director level and above) are eligible for an annual performance bonus of up to 35% of base salary, contingent on company EBITDA targets.
+- Equity Allocation: RSUs vest over 4 years with a 1-year cliff (25% at Month 12, then quarterly).
+- Supplemental Health: Executive health plan covers full international travel insurance and executive health concierge services.
