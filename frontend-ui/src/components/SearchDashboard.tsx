@@ -73,7 +73,7 @@ export const SearchDashboard: React.FC<SearchDashboardProps> = ({
     };
 
     try {
-      const response = await searchRAG(searchQuery, searchMode, filters, user, backendUrl, isDemoMode);
+      const response = await searchRAG(searchQuery, searchMode, filters, user, backendUrl);
       setActiveResponse(response);
       setHistory((prev) => [response, ...prev.slice(0, 4)]);
     } catch (err) {

@@ -24,7 +24,6 @@ interface SidebarProps {
   setActiveTab: (tab: NavTab) => void;
   onLogout: () => void;
   onOpenSettings: () => void;
-  onOpenUserModal: () => void;
   isConnected: boolean | null;
   isDemoMode: boolean;
   isCollapsed: boolean;
@@ -37,7 +36,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   setActiveTab,
   onLogout,
   onOpenSettings,
-  onOpenUserModal,
   isConnected,
   isDemoMode,
   isCollapsed,
@@ -204,7 +202,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
 
           {user.role === 'admin' && (
-            <>
               <button
                 onClick={() => setActiveTab('ragas_report')}
                 className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-semibold tracking-wide transition-all ${
@@ -217,9 +214,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <Sparkles className="w-4 h-4 shrink-0 text-purple-400" />
                 {!isCollapsed && <span>RAGAS Report</span>}
               </button>
+          )}
 
+          {(user.role === 'admin' || user.role === 'hr' || user.role === 'technical_manager') && (
               <button
-                onClick={onOpenUserModal}
+                onClick={() => setActiveTab('users')}
                 className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-semibold tracking-wide transition-all ${
                   activeTab === 'users'
                     ? 'bg-white/10 text-white border border-white/20'
@@ -230,7 +229,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <Users className="w-4 h-4 shrink-0 text-amber-400" />
                 {!isCollapsed && <span>User Admin</span>}
               </button>
-            </>
           )}
         </nav>
       </div>
@@ -249,11 +247,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="pt-2 flex items-center justify-between gap-2 bg-black/40 p-2.5 rounded-2xl border border-white/5">
           <div className="flex items-center gap-2.5 overflow-hidden">
             <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-600 to-indigo-600 flex items-center justify-center font-bold text-xs text-white shrink-0">
-              {user.name ? user.name.slice(0, 2).toUpperCase() : 'US'}
+              {user.email ? user.email.slice(0, 2).toUpperCase() : 'US'}
             </div>
             {!isCollapsed && (
               <div className="overflow-hidden text-left">
-                <div className="text-xs font-bold text-white truncate">{user.name}</div>
+                <div className="text-xs font-bold text-white truncate">{user.email}</div>
                 <span className={`px-1.5 py-0.2 text-[9px] font-semibold border rounded ${getRoleBadgeColor(user.role)}`}>
                   {getRoleLabel(user.role)}
                 </span>

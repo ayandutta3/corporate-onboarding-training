@@ -43,7 +43,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
     setErrorMessage(null);
 
     try {
-      const { user, token } = await loginUser(email, password, backendUrl, isDemoMode);
+      const { user, token } = await loginUser(email, password, backendUrl);
       onLoginSuccess(user, token);
     } catch (err: any) {
       setErrorMessage(err.message || 'Login failed. Please check credentials or backend endpoint.');

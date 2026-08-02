@@ -1,4 +1,4 @@
-import { AuthUser, SearchFilters, SearchResponse, Trace, UploadedDoc, UserRole } from '../types';
+import { AuthUser, SearchFilters, SearchResponse, Trace, UploadedDoc, UserRole, AdminUser } from '../types';
 
 export const DEFAULT_BACKEND_URL = 'http://localhost:8000';
 
@@ -75,16 +75,16 @@ export async function loginUser(
   const user: AuthUser = {
     email: payload?.sub || email,
     role,
-    name: email.split('@')[0].toUpperCase(),
-    department: 'Enterprise Operations',
+    division: payload?.division,
+    businessLine: payload?.businessLine,
     token,
   };
   
   return { user, token };
 }
 
-export async function createAdminUser(
-  userData: { email: string; password: string; role: UserRole },
+export async function createUser(
+  userData: { email: string; password: string; role: UserRole; division?: string; businessLine?: string },
   token: string,
   backendUrl: string = DEFAULT_BACKEND_URL
 ): Promise<{ success: boolean; message: string }> {
@@ -95,7 +95,13 @@ export async function createAdminUser(
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify(userData),
+    body: JSON.stringify({
+      email: userData.email,
+      password: userData.password,
+      role: userData.role,
+      division: userData.division,
+      businessLine: userData.businessLine
+    }),
   });
 
   if (res.ok) {
@@ -307,5 +313,53 @@ export async function updateDocument(
     body: JSON.stringify(data)
   });
   if (!res.ok) throw new Error('Failed to update document');
+  return res.json();
+}
+
+export async function getUsers(
+  token: string,
+  backendUrl: string = DEFAULT_BACKEND_URL
+): Promise<AdminUser[]> {
+  const res = await fetch(`${backendUrl}/admin/users`, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  if (!res.ok) throw new Error('Failed to fetch users');
+  return res.json();
+}
+
+export async function approveUser(
+  userId: string,
+  designation: string,
+  token: string,
+  backendUrl: string = DEFAULT_BACKEND_URL
+): Promise<AdminUser> {
+  const res = await fetch(`${backendUrl}/admin/users/${userId}/approve`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify({ designation })
+  });
+  if (!res.ok) throw new Error('Failed to approve user');
+  return res.json();
+}
+
+export async function rejectUser(
+  userId: string,
+  reason: string,
+  token: string,
+  backendUrl: string = DEFAULT_BACKEND_URL
+): Promise<AdminUser> {
+  const res = await fetch(`${backendUrl}/admin/users/${userId}/reject`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify({ reason })
+  });
+  if (!res.ok) throw new Error('Failed to reject user');
   return res.json();
 }

@@ -7,7 +7,7 @@ import { SearchDashboard } from './components/SearchDashboard';
 import { UploadPortal } from './components/UploadPortal';
 import { MonitoringDashboard } from './components/MonitoringDashboard';
 import { PolicyHub } from './components/PolicyHub';
-import { UserManagementModal } from './components/UserManagementModal';
+import { UserAdminPage } from './components/UserAdminPage';
 import { SettingsModal } from './components/SettingsModal';
 import { RagasReportView } from './components/RagasReportView';
 
@@ -21,7 +21,6 @@ export default function App() {
   const [isConnected, setIsConnected] = useState<boolean | null>(null);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
 
   // Ping backend on boot
   useEffect(() => {
@@ -65,7 +64,6 @@ export default function App() {
         setActiveTab={setActiveTab}
         onLogout={handleLogout}
         onOpenSettings={() => setIsSettingsOpen(true)}
-        onOpenUserModal={() => setIsUserModalOpen(true)}
         isConnected={isConnected}
         isDemoMode={isDemoMode}
         isCollapsed={isSidebarCollapsed}
@@ -105,18 +103,14 @@ export default function App() {
         {activeTab === 'ragas_report' && (
           <RagasReportView user={currentUser} backendUrl={backendUrl} />
         )}
+
+        {activeTab === 'users' && (
+          <UserAdminPage user={currentUser} backendUrl={backendUrl} />
+        )}
       </main>
 
 
 
-      {/* Admin User Provisioning Modal */}
-      <UserManagementModal
-        currentUser={currentUser}
-        isOpen={isUserModalOpen}
-        onClose={() => setIsUserModalOpen(false)}
-        backendUrl={backendUrl}
-        isDemoMode={isDemoMode}
-      />
 
       {/* Settings Modal */}
       <SettingsModal

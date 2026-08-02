@@ -1,11 +1,25 @@
-export type UserRole = 'admin' | 'user' | 'hr' | 'finance_manager' | 'technical_manager';
+export type UserRole = 'admin' | 'hr' | 'finance_manager' | 'technical_manager' | 'user';
+
+export type UserStatus = 'Approved' | 'PendingApproval' | 'Rejected';
 
 export interface AuthUser {
   email: string;
   role: UserRole;
-  name: string;
-  department: string;
+  division?: string;
+  businessLine?: string;
   token?: string;
+}
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  role: UserRole;
+  is_active: boolean;
+  status: UserStatus;
+  designation?: string;
+  businessLine?: string;
+  division?: string;
+  rejection_reason?: string;
 }
 
 export type SearchMode = 'vector' | 'hybrid';

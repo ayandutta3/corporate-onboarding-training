@@ -41,7 +41,7 @@ export const MonitoringDashboard: React.FC<MonitoringDashboardProps> = ({
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const data = await fetchTraces(user.token || 'demo-token', backendUrl, isDemoMode);
+      const data = await fetchTraces(user.token || '', backendUrl);
       setTraces(data);
     } catch (err) {
       console.error('Error fetching Langfuse traces:', err);

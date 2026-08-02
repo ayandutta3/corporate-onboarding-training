@@ -4,36 +4,26 @@ export const DEMO_PERSONAS: AuthUser[] = [
   {
     email: 'admin@corp.internal',
     role: 'admin',
-    name: 'Sarah Connor (System Admin)',
-    department: 'Global Infrastructure & IT',
     token: 'mock-jwt-admin-token-8849',
   },
   {
     email: 'hr.director@corp.internal',
     role: 'hr',
-    name: 'Elena Rostova (HR Director)',
-    department: 'People & Culture',
     token: 'mock-jwt-hr-token-3920',
   },
   {
     email: 'tech.lead@corp.internal',
     role: 'technical_manager',
-    name: 'Marcus Vance (VP Engineering)',
-    department: 'Core Architecture',
     token: 'mock-jwt-tech-token-1102',
   },
   {
     email: 'finance.lead@corp.internal',
     role: 'finance_manager',
-    name: 'David Chen (Finance Manager)',
-    department: 'Corporate Finance & Ops',
     token: 'mock-jwt-finance-token-7741',
   },
   {
     email: 'alex.employee@corp.internal',
     role: 'user',
-    name: 'Alex Rivera (Senior Engineer)',
-    department: 'Technical Onboarding',
     token: 'mock-jwt-user-token-9982',
   },
 ];
