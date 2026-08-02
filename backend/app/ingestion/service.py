@@ -29,7 +29,7 @@ class IngestionService:
             return "Engineering", "Technical"
         return "General", "General"
 
-    async def process_upload(self, file: UploadFile, user: UserInDB, pipeline_type: str, title: str = None, description: str = None, version: int = 1, requested_department: str = None, user_tags_str: str = None, autofill_tags: bool = True):
+    async def process_upload(self, file: UploadFile, user: UserInDB, pipeline_type: str, title: str = None, description: str = None, version: int = 1, requested_department: str = None, user_tags_str: str = None, autofill_tags: bool = True, override_summary: str = None, override_tags: list[str] = None):
         department, knowledge_type = self._determine_metadata_from_role(user.role)
         
         if user.role == Role.ADMIN and requested_department:
@@ -48,8 +48,12 @@ class IngestionService:
         if description:
             extracted_text = f"Title: {title or file.filename}\nDescription: {description}\n\n{extracted_text}"
             
-        # 3. AI Summary & Tags
-        summary, generated_tags = await generate_ai_summary_and_tags(extracted_text)
+        # 3. AI Summary & Tags (Use override if provided by UI confirm step)
+        if override_summary is not None:
+            summary = override_summary
+            generated_tags = override_tags or []
+        else:
+            summary, generated_tags = await generate_ai_summary_and_tags(extracted_text)
         
         # 4. Handle Tags based on autofill_tags flag
         final_tags = generated_tags or []
@@ -86,3 +90,34 @@ class IngestionService:
         # 6. Save Metadata to MongoDB
         saved_doc = await self.doc_repo.create(doc)
         return saved_doc
+
+    async def analyze_file(self, file: UploadFile):
+        # 1. Save Original File temporarily
+        file_id = str(uuid.uuid4())
+        safe_filename = f"temp_{file_id}_{file.filename}"
+        dest_path = f"uploads/{safe_filename}"
+        await save_upload_file(file, dest_path)
+        
+        saved_size = os.path.getsize(dest_path) if os.path.exists(dest_path) else 0
+        print(f"ANALYZE: Saved temp file to {dest_path}, size: {saved_size} bytes")
+        
+        try:
+            # 2. Extract Text
+            extracted_text = await extract_text_from_file(dest_path, file.filename)
+            print(f"ANALYZE: Extracted text length: {len(extracted_text)}")
+            
+            # 3. AI Summary & Tags
+            summary, generated_tags = await generate_ai_summary_and_tags(extracted_text)
+            print(f"ANALYZE: Summary length: {len(summary)}, Tags count: {len(generated_tags)}")
+            
+            return {
+                "summary": summary,
+                "tags": generated_tags
+            }
+        finally:
+            # Clean up the temp file
+            if os.path.exists(dest_path):
+                try:
+                    os.remove(dest_path)
+                except Exception:
+                    pass

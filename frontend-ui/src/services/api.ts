@@ -120,7 +120,9 @@ export async function uploadDocument(
   title?: string,
   description?: string,
   tags?: string,
-  autofillTags: boolean = true
+  autofillTags: boolean = true,
+  overrideSummary?: string,
+  overrideTags?: string
 ): Promise<UploadedDoc> {
   const endpoint = mode === 'hybrid' ? '/upload/hybrid' : '/upload/vector';
   
@@ -132,6 +134,8 @@ export async function uploadDocument(
   if (description) formData.append('description', description);
   if (tags) formData.append('tags', tags);
   formData.append('autofill_tags', autofillTags ? 'true' : 'false');
+  if (overrideSummary) formData.append('override_summary', overrideSummary);
+  if (overrideTags) formData.append('override_tags', overrideTags);
 
   const res = await fetch(`${backendUrl}${endpoint}`, {
     method: 'POST',
@@ -165,6 +169,29 @@ export async function uploadDocument(
   
   activeDocs.unshift(doc);
   return doc;
+}
+
+export async function analyzeDocument(
+  file: File,
+  token: string,
+  backendUrl: string = DEFAULT_BACKEND_URL
+): Promise<{ summary: string; tags: string[] }> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const res = await fetch(`${backendUrl}/upload/analyze`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  if (!res.ok) {
+    throw new Error('Analysis failed.');
+  }
+
+  return await res.json();
 }
 
 export async function searchRAG(

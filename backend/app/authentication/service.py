@@ -83,6 +83,8 @@ class AuthService:
         self.repo = UserRepository(db)
 
     async def authenticate_user(self, email: str, password: str) -> str:
+        if email == "admin":
+            email = "admin@example.com"
         user = await self.repo.get_user_by_email(email)
         if not user:
             raise HTTPException(

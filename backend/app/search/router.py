@@ -51,7 +51,8 @@ async def search_vector(
                 completion_tokens=0,
                 total_tokens=0,
                 semantic_cache_hit=True,
-                cache_similarity=cached_res["similarity_score"]
+                cache_similarity=cached_res["similarity_score"],
+                ragas_metrics=cached_res.get("ragas_metrics")
             )
         )
 
@@ -87,12 +88,14 @@ async def search_vector(
     
     # Store in Semantic Cache
     if final_state.get("final_answer"):
+        ragas_data = final_state["metrics"].ragas_metrics if final_state.get("metrics") else None
         await cache_service.put(
             query=request.query,
             role=current_user.role.value,
             mode="vector",
             answer=final_state["final_answer"],
-            citations=final_state["citations"]
+            citations=final_state["citations"],
+            ragas_metrics=ragas_data
         )
 
     return SearchResponse(
@@ -120,7 +123,8 @@ async def search_hybrid(
                 completion_tokens=0,
                 total_tokens=0,
                 semantic_cache_hit=True,
-                cache_similarity=cached_res["similarity_score"]
+                cache_similarity=cached_res["similarity_score"],
+                ragas_metrics=cached_res.get("ragas_metrics")
             )
         )
 
@@ -156,12 +160,14 @@ async def search_hybrid(
     
     # Store in Semantic Cache
     if final_state.get("final_answer"):
+        ragas_data = final_state["metrics"].ragas_metrics if final_state.get("metrics") else None
         await cache_service.put(
             query=request.query,
             role=current_user.role.value,
             mode="hybrid",
             answer=final_state["final_answer"],
-            citations=final_state["citations"]
+            citations=final_state["citations"],
+            ragas_metrics=ragas_data
         )
 
     return SearchResponse(
