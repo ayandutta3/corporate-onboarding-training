@@ -38,14 +38,19 @@ class VectorService:
             ids.append(chunk_id)
             embeddings.append(embedding)
             documents.append(chunk.page_content)
-            metadatas.append({
+            meta_dict = {
                 "document_id": str(doc.id), 
                 "chunk_id": chunk_id,
                 "document_name": doc.filename,
                 "department": doc.department,
                 "timestamp": str(doc.created_at),
                 "version": doc.version
-            })
+            }
+            if doc.division:
+                meta_dict["division"] = doc.division
+            if doc.business_line:
+                meta_dict["business_line"] = doc.business_line
+            metadatas.append(meta_dict)
             
             # Skip saving chunk metadata to MongoDB because it's already in ChromaDB
             

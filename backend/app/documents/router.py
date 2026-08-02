@@ -25,6 +25,8 @@ async def get_documents(
     size: int = Query(20, ge=1, le=100),
     department: Optional[str] = None,
     knowledge_type: Optional[str] = None,
+    division: Optional[str] = None,
+    business_line: Optional[str] = None,
     version: Optional[int] = None,
     uploaded_by: Optional[str] = None,
     status: Optional[str] = None,
@@ -34,10 +36,37 @@ async def get_documents(
 ):
     repo = DocumentRepository(db)
     query = {}
+    and_clauses = []
     
-    # Apply filters
+    # Filter documents to only those the user is allowed to see
+    if current_user.role != Role.ADMIN:
+        if current_user.division == "Corporate":
+            query["division"] = "Corporate"
+        elif current_user.division == "BusinessLine":
+            user_bl = getattr(current_user, 'businessLine', None)
+            if user_bl:
+                and_clauses.append({
+                    "$or": [
+                        {"division": "Corporate"},
+                        {"business_line": user_bl}
+                    ]
+                })
+            else:
+                query["division"] = "Corporate"
+    
+    # Apply explicit user filters
     if department: query["department"] = department
     if knowledge_type: query["knowledge_type"] = knowledge_type
+    
+    # If the user selected a specific division filter, apply it
+    if division: 
+        query["division"] = division
+    if business_line: 
+        query["business_line"] = business_line
+        
+    if and_clauses:
+        query["$and"] = and_clauses
+
     if version: query["version"] = version
     if uploaded_by: query["uploaded_by"] = uploaded_by
     if status: query["status"] = status

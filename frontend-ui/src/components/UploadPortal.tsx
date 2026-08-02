@@ -48,6 +48,8 @@ export const UploadPortal: React.FC<UploadPortalProps> = ({
   // CRITICAL REQUIRED UI TOGGLE SWITCH: Vector Ingestion vs Hybrid Ingestion
   const [ingestionMode, setIngestionMode] = useState<IngestionMode>('hybrid');
   const [selectedDepartment, setSelectedDepartment] = useState(getDefaultDepartment(user.role));
+  const [selectedDivision, setSelectedDivision] = useState(user.division || 'Corporate');
+  const [selectedBusinessLine, setSelectedBusinessLine] = useState(user.businessLine || '');
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [docTitle, setDocTitle] = useState('');
@@ -97,7 +99,9 @@ export const UploadPortal: React.FC<UploadPortalProps> = ({
         user.token || 'demo-token',
         backendUrl,
         docTitle,
-        docDescription
+        docDescription,
+        selectedDivision,
+        selectedBusinessLine
       );
 
       clearInterval(interval);
@@ -186,10 +190,10 @@ export const UploadPortal: React.FC<UploadPortalProps> = ({
         {/* Upload Form Area */}
         <form onSubmit={handleUploadSubmit} className="space-y-6">
           {/* Metadata tagging bar */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-black/40 p-4 rounded-2xl border border-white/5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 bg-black/40 p-4 rounded-2xl border border-white/5">
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5 flex items-center gap-1">
-                <Building2 className="w-3.5 h-3.5 text-purple-400" /> Department Metadata Tag
+                <Building2 className="w-3.5 h-3.5 text-purple-400" /> Department
               </label>
               <select
                 value={selectedDepartment}
@@ -204,12 +208,62 @@ export const UploadPortal: React.FC<UploadPortalProps> = ({
                 <option value="Hidden / Read Only" className="bg-[#0e1117]" disabled>Hidden / Read Only</option>
               </select>
             </div>
+            
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5 flex items-center gap-1">
+                <Layers className="w-3.5 h-3.5 text-indigo-400" /> Division
+              </label>
+              {user.role === 'admin' ? (
+                <select
+                  value={selectedDivision}
+                  onChange={(e) => {
+                      setSelectedDivision(e.target.value);
+                      if (e.target.value === 'Corporate') {
+                          setSelectedBusinessLine('');
+                      }
+                  }}
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
+                >
+                  <option value="Corporate" className="bg-[#0e1117]">Corporate</option>
+                  <option value="BusinessLine" className="bg-[#0e1117]">Business Line</option>
+                </select>
+              ) : (
+                <div className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-xs text-slate-300 font-mono opacity-75 cursor-not-allowed">
+                  {user.division || 'Corporate'}
+                </div>
+              )}
+            </div>
 
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5 flex items-center gap-1">
-                <Database className="w-3.5 h-3.5 text-indigo-400" /> Target Endpoint
+                <Layers className="w-3.5 h-3.5 text-indigo-400" /> Business Line
               </label>
-              <div className="px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-xs font-mono text-indigo-300">
+              {user.role === 'admin' ? (
+                <select
+                  value={selectedBusinessLine}
+                  onChange={(e) => setSelectedBusinessLine(e.target.value)}
+                  disabled={selectedDivision === 'Corporate'}
+                  className={`w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 font-mono ${selectedDivision === 'Corporate' ? 'opacity-50' : ''}`}
+                >
+                  <option value="" className="bg-[#0e1117]">None</option>
+                  <option value="Insurance" className="bg-[#0e1117]">Insurance</option>
+                  <option value="Banking" className="bg-[#0e1117]">Banking</option>
+                  <option value="Healthcare" className="bg-[#0e1117]">Healthcare</option>
+                  <option value="Retail" className="bg-[#0e1117]">Retail</option>
+                  <option value="Telecom" className="bg-[#0e1117]">Telecom</option>
+                </select>
+              ) : (
+                <div className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-xs text-slate-300 font-mono opacity-75 cursor-not-allowed">
+                  {user.businessLine || 'N/A'}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5 flex items-center gap-1">
+                <Database className="w-3.5 h-3.5 text-emerald-400" /> Target Endpoint
+              </label>
+              <div className="px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-xs font-mono text-emerald-300">
                 {ingestionMode === 'hybrid' ? 'POST /upload/hybrid' : 'POST /upload/vector'}
               </div>
             </div>

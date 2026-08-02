@@ -8,6 +8,8 @@ class DocumentModel(MongoBaseModel):
     uploaded_by: str
     department: str
     knowledge_type: str
+    division: Optional[str] = None
+    business_line: Optional[str] = None
     title: Optional[str] = None
     description: Optional[str] = None
     extracted_text: Optional[str] = None
@@ -28,3 +30,5 @@ class DocumentChunkModel(MongoBaseModel):
     uploaded_by: str
     department: str
     knowledge_type: str
+    division: Optional[str] = None
+    business_line: Optional[str] = None

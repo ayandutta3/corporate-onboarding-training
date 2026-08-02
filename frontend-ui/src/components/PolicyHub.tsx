@@ -4,7 +4,7 @@ import { fetchDocuments, deleteDocument, ApiState } from '../services/api';
 import { DocumentPreviewModal } from './DocumentPreviewModal';
 import {
   FileText, Database, Building2, Search, Trash2, Eye, Download,
-  Filter, ChevronLeft, ChevronRight, AlertCircle, RefreshCw
+  Filter, ChevronLeft, ChevronRight, AlertCircle, RefreshCw, Layers
 } from 'lucide-react';
 
 interface PolicyHubProps {
@@ -23,6 +23,8 @@ export const PolicyHub: React.FC<PolicyHubProps> = ({ user, backendUrl }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [deptFilter, setDeptFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
+  const [divFilter, setDivFilter] = useState('');
+  const [blFilter, setBlFilter] = useState('');
   
   // Preview state
   const [previewDoc, setPreviewDoc] = useState<{id: string, name: string} | null>(null);
@@ -35,7 +37,9 @@ export const PolicyHub: React.FC<PolicyHubProps> = ({ user, backendUrl }) => {
         size: 10,
         search: searchQuery,
         department: deptFilter,
-        knowledge_type: typeFilter
+        knowledge_type: typeFilter,
+        division: divFilter,
+        business_line: blFilter
       });
       setDocuments(data.items);
       setTotalPages(data.pages);
@@ -49,7 +53,7 @@ export const PolicyHub: React.FC<PolicyHubProps> = ({ user, backendUrl }) => {
 
   useEffect(() => {
     loadDocuments();
-  }, [page, deptFilter, typeFilter]);
+  }, [page, deptFilter, typeFilter, divFilter, blFilter]);
   
   // Reload when search query changes after a delay
   useEffect(() => {
@@ -113,7 +117,7 @@ export const PolicyHub: React.FC<PolicyHubProps> = ({ user, backendUrl }) => {
         </div>
 
         {/* Filters and Search */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-black/20 p-4 rounded-2xl border border-white/5">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 bg-black/20 p-4 rounded-2xl border border-white/5">
           <div className="relative md:col-span-2">
             <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
             <input
@@ -132,8 +136,8 @@ export const PolicyHub: React.FC<PolicyHubProps> = ({ user, backendUrl }) => {
               onChange={(e) => { setDeptFilter(e.target.value); setPage(1); }}
               className="w-full pl-9 pr-4 py-2 bg-white/5 border border-white/10 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500 appearance-none"
             >
-              <option value="" className="bg-[#0e1117]">All Departments</option>
-              <option value="Corporate Finance & Ops" className="bg-[#0e1117]">Corporate Finance & Ops</option>
+              <option value="" className="bg-[#0e1117]">All Depts</option>
+              <option value="Corporate Finance & Ops" className="bg-[#0e1117]">Corp Finance & Ops</option>
               <option value="Engineering" className="bg-[#0e1117]">Engineering</option>
               <option value="HR" className="bg-[#0e1117]">HR</option>
               <option value="Management" className="bg-[#0e1117]">Management</option>
@@ -152,6 +156,35 @@ export const PolicyHub: React.FC<PolicyHubProps> = ({ user, backendUrl }) => {
               <option value="Financials" className="bg-[#0e1117]">Financials</option>
               <option value="Technical" className="bg-[#0e1117]">Technical</option>
               <option value="General" className="bg-[#0e1117]">General</option>
+            </select>
+          </div>
+
+          <div className="relative">
+            <Filter className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+            <select
+              value={divFilter}
+              onChange={(e) => { setDivFilter(e.target.value); setPage(1); }}
+              className="w-full pl-9 pr-4 py-2 bg-white/5 border border-white/10 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500 appearance-none"
+            >
+              <option value="" className="bg-[#0e1117]">All Divisions</option>
+              <option value="Corporate" className="bg-[#0e1117]">Corporate</option>
+              <option value="BusinessLine" className="bg-[#0e1117]">Business Line</option>
+            </select>
+          </div>
+
+          <div className="relative">
+            <Filter className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+            <select
+              value={blFilter}
+              onChange={(e) => { setBlFilter(e.target.value); setPage(1); }}
+              className="w-full pl-9 pr-4 py-2 bg-white/5 border border-white/10 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500 appearance-none"
+            >
+              <option value="" className="bg-[#0e1117]">All Lines</option>
+              <option value="Insurance" className="bg-[#0e1117]">Insurance</option>
+              <option value="Banking" className="bg-[#0e1117]">Banking</option>
+              <option value="Healthcare" className="bg-[#0e1117]">Healthcare</option>
+              <option value="Retail" className="bg-[#0e1117]">Retail</option>
+              <option value="Telecom" className="bg-[#0e1117]">Telecom</option>
             </select>
           </div>
         </div>
@@ -201,7 +234,10 @@ export const PolicyHub: React.FC<PolicyHubProps> = ({ user, backendUrl }) => {
                       <div className="flex items-center gap-1.5 text-xs text-slate-300">
                         <Building2 className="w-3.5 h-3.5 text-purple-400" /> {doc.department}
                       </div>
-                      <div className="text-xs text-slate-400 pl-5">
+                      <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                        <Layers className="w-3.5 h-3.5 text-indigo-400" /> {doc.division || 'Corp'} {doc.business_line ? `(${doc.business_line})` : ''}
+                      </div>
+                      <div className="text-xs text-slate-500 pl-5">
                         {doc.knowledge_type}
                       </div>
                     </div>

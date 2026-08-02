@@ -77,6 +77,8 @@ export async function loginUser(
     role,
     name: email.split('@')[0].toUpperCase(),
     department: 'Enterprise Operations',
+    division: payload?.division,
+    businessLine: payload?.businessLine,
     token,
   };
   
@@ -84,7 +86,7 @@ export async function loginUser(
 }
 
 export async function createAdminUser(
-  userData: { email: string; password: string; role: UserRole },
+  userData: { email: string; password: string; role: UserRole; division?: string; businessLine?: string },
   token: string,
   backendUrl: string = DEFAULT_BACKEND_URL
 ): Promise<{ success: boolean; message: string }> {
@@ -112,7 +114,9 @@ export async function uploadDocument(
   token: string,
   backendUrl: string = DEFAULT_BACKEND_URL,
   title?: string,
-  description?: string
+  description?: string,
+  division?: string,
+  businessLine?: string
 ): Promise<UploadedDoc> {
   const endpoint = mode === 'hybrid' ? '/upload/hybrid' : '/upload/vector';
   
@@ -122,6 +126,8 @@ export async function uploadDocument(
   formData.append('department', department);
   if (title) formData.append('title', title);
   if (description) formData.append('description', description);
+  if (division) formData.append('division', division);
+  if (businessLine) formData.append('business_line', businessLine);
 
   const res = await fetch(`${backendUrl}${endpoint}`, {
     method: 'POST',

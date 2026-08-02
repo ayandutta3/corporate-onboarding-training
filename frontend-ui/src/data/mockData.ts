@@ -6,6 +6,7 @@ export const DEMO_PERSONAS: AuthUser[] = [
     role: 'admin',
     name: 'Sarah Connor (System Admin)',
     department: 'Global Infrastructure & IT',
+    division: 'Corporate',
     token: 'mock-jwt-admin-token-8849',
   },
   {
@@ -13,6 +14,7 @@ export const DEMO_PERSONAS: AuthUser[] = [
     role: 'hr',
     name: 'Elena Rostova (HR Director)',
     department: 'People & Culture',
+    division: 'Corporate',
     token: 'mock-jwt-hr-token-3920',
   },
   {
@@ -20,6 +22,8 @@ export const DEMO_PERSONAS: AuthUser[] = [
     role: 'technical_manager',
     name: 'Marcus Vance (VP Engineering)',
     department: 'Core Architecture',
+    division: 'BusinessLine',
+    businessLine: 'Insurance',
     token: 'mock-jwt-tech-token-1102',
   },
   {
@@ -27,6 +31,7 @@ export const DEMO_PERSONAS: AuthUser[] = [
     role: 'finance_manager',
     name: 'David Chen (Finance Manager)',
     department: 'Corporate Finance & Ops',
+    division: 'Corporate',
     token: 'mock-jwt-finance-token-7741',
   },
   {
@@ -34,6 +39,8 @@ export const DEMO_PERSONAS: AuthUser[] = [
     role: 'user',
     name: 'Alex Rivera (Senior Engineer)',
     department: 'Technical Onboarding',
+    division: 'BusinessLine',
+    businessLine: 'Banking',
     token: 'mock-jwt-user-token-9982',
   },
 ];

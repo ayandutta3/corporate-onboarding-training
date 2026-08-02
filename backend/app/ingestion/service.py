@@ -29,11 +29,26 @@ class IngestionService:
             return "Engineering", "Technical"
         return "General", "General"
 
-    async def process_upload(self, file: UploadFile, user: UserInDB, pipeline_type: str, title: str = None, description: str = None, version: int = 1, requested_department: str = None):
+    async def process_upload(self, file: UploadFile, user: UserInDB, pipeline_type: str, title: str = None, description: str = None, version: int = 1, requested_department: str = None, requested_division: str = None, requested_business_line: str = None):
         department, knowledge_type = self._determine_metadata_from_role(user.role)
         
-        if user.role == Role.ADMIN and requested_department:
-            department = requested_department
+        division = "Corporate"
+        business_line = None
+        
+        if user.role in [Role.ADMIN, Role.HR, Role.FINANCE_MANAGER]:
+            division = "Corporate"
+            business_line = None
+        else:
+            division = "BusinessLine"
+            business_line = getattr(user, 'businessLine', None)
+        
+        if user.role == Role.ADMIN:
+            if requested_department:
+                department = requested_department
+            if requested_division:
+                division = requested_division
+            if requested_business_line:
+                business_line = requested_business_line
         
         # 1. Save Original File
         file_id = str(uuid.uuid4())
@@ -60,6 +75,8 @@ class IngestionService:
             uploaded_by=user.email,
             department=department,
             knowledge_type=knowledge_type,
+            division=division,
+            business_line=business_line,
             title=title,
             description=description,
             extracted_text=extracted_text,

@@ -28,7 +28,8 @@ class UserService:
             admin_user = UserCreate(
                 email=admin_email,
                 password="admin",
-                role=Role.ADMIN
+                role=Role.ADMIN,
+                division="Corporate"
             )
             await self.create_user(admin_user)
 
@@ -51,7 +52,11 @@ class AuthService:
                 headers={"WWW-Authenticate": "Bearer"},
             )
         
-        access_token = create_access_token(
-            data={"sub": user.email, "role": user.role.value}
-        )
+        token_data = {"sub": user.email, "role": user.role.value}
+        if user.division:
+            token_data["division"] = user.division
+        if user.businessLine:
+            token_data["businessLine"] = user.businessLine
+            
+        access_token = create_access_token(data=token_data)
         return access_token

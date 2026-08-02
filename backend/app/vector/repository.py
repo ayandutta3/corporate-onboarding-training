@@ -1,5 +1,5 @@
 import chromadb
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 class VectorRepository:
     def __init__(self, collection_name: str = "corporate_knowledge", persist_directory: str = "./chroma_db"):
@@ -22,12 +22,16 @@ class VectorRepository:
             documents=documents
         )
 
-    def search(self, query_embedding: List[float], top_k: int = 5) -> Dict[str, Any]:
-        results = self.collection.query(
-            query_embeddings=[query_embedding],
-            n_results=top_k,
-            include=["documents", "metadatas", "distances"]
-        )
+    def search(self, query_embedding: List[float], top_k: int = 5, where: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        kwargs = {
+            "query_embeddings": [query_embedding],
+            "n_results": top_k,
+            "include": ["documents", "metadatas", "distances"]
+        }
+        if where:
+            kwargs["where"] = where
+            
+        results = self.collection.query(**kwargs)
         return results
 
     def update(self, ids: List[str], embeddings: List[List[float]], metadatas: List[Dict[str, Any]], documents: List[str]):

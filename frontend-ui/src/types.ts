@@ -5,6 +5,9 @@ export interface AuthUser {
   role: UserRole;
   name: string;
   department: string;
+  division?: string;
+  businessLine?: string;
+  designation?: string;
   token?: string;
 }
 
@@ -75,6 +78,8 @@ export interface UploadedDoc {
   fileType: string;
   mode: IngestionMode;
   department: string;
+  division?: string;
+  businessLine?: string;
   uploadedBy: string;
   timestamp: string;
   chunksCount: number;

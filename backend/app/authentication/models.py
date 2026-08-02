@@ -13,6 +13,9 @@ class Role(str, Enum):
 class UserBase(BaseModel):
     email: EmailStr
     role: Role = Role.USER
+    division: Optional[str] = None
+    businessLine: Optional[str] = None
+    designation: Optional[str] = None
     is_active: bool = True
 
 class UserCreate(UserBase):

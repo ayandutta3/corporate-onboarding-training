@@ -47,15 +47,22 @@ async def metadata_search(state: GraphState) -> GraphState:
     
     metadata_service = MetadataSearchService(db)
     role_filter = request.access_roles if request.access_roles else user.role.value
+    div_filter = user.division
+    bl_filter = getattr(user, 'businessLine', None)
+    
     if user.role.value == "admin":
         role_filter = request.access_roles # Admin can bypass unless explicit
+        div_filter = None
+        bl_filter = None
         
     candidates = await metadata_service.get_candidate_documents(
         role=role_filter,
         department=request.department,
         knowledge_type=request.knowledge_type,
         status=request.status,
-        version=request.version
+        version=request.version,
+        division=div_filter,
+        business_line=bl_filter
     )
     
     state["metrics"].retrieval_time_ms += int((time.time() - start_time) * 1000)
@@ -109,7 +116,20 @@ async def vector_search(state: GraphState) -> GraphState:
         
         query_embedding, embedding_time_ms = await embedding_service.generate_embedding(request.query)
         start_time = time.time()
-        results = vector_repo.search(query_embedding=query_embedding, top_k=request.top_k)
+        
+        user = state["user"]
+        where = None
+        if user.role.value != "admin":
+            if user.division == "Corporate":
+                where = {"division": "Corporate"}
+            elif user.division == "BusinessLine":
+                bl = getattr(user, 'businessLine', None)
+                if bl:
+                    where = {"$or": [{"division": "Corporate"}, {"business_line": bl}]}
+                else:
+                    where = {"division": "Corporate"}
+                    
+        results = vector_repo.search(query_embedding=query_embedding, top_k=request.top_k, where=where)
         retrieval_time_ms = int((time.time() - start_time) * 1000)
         
         documents = results.get("documents", [[]])[0]

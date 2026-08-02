@@ -13,16 +13,23 @@ class MetadataSearchService:
         department: Optional[str] = None, 
         knowledge_type: Optional[str] = None,
         status: Optional[str] = None,
-        version: Optional[int] = None
+        version: Optional[int] = None,
+        division: Optional[str] = None,
+        business_line: Optional[str] = None
     ) -> List[DocumentModel]:
         
         query = {}
+        and_clauses = []
+        
         if role:
-            query["$or"] = [
-                {"access_roles": role},
-                {"access_roles": {"$size": 0}},
-                {"access_roles": {"$exists": False}}
-            ]
+            and_clauses.append({
+                "$or": [
+                    {"access_roles": role},
+                    {"access_roles": {"$size": 0}},
+                    {"access_roles": {"$exists": False}}
+                ]
+            })
+            
         if department:
             query["department"] = department
         if knowledge_type:
@@ -31,6 +38,26 @@ class MetadataSearchService:
             query["status"] = status
         if version is not None:
             query["version"] = version
+            
+        if division == "Corporate":
+            query["division"] = "Corporate"
+        elif division == "BusinessLine":
+            if business_line:
+                and_clauses.append({
+                    "$or": [
+                        {"division": "Corporate"},
+                        {"business_line": business_line}
+                    ]
+                })
+            else:
+                query["division"] = "Corporate"
+        elif division is not None:
+            query["division"] = division
+            if business_line:
+                query["business_line"] = business_line
+
+        if and_clauses:
+            query["$and"] = and_clauses
             
         cursor = self.doc_repo.collection.find(query)
         candidates = []

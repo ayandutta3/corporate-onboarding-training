@@ -27,13 +27,15 @@ async def upload_vector(
     title: Optional[str] = Form(None),
     description: Optional[str] = Form(None),
     department: Optional[str] = Form(None),
+    division: Optional[str] = Form(None),
+    business_line: Optional[str] = Form(None),
     version: Optional[int] = Form(1),
     current_user: UserInDB = Depends(get_current_user),
     db: AsyncIOMotorDatabase = Depends(get_database)
 ):
     validate_file(file)
     service = IngestionService(db)
-    doc = await service.process_upload(file, current_user, "vector", title=title, description=description, version=version, requested_department=department)
+    doc = await service.process_upload(file, current_user, "vector", title=title, description=description, version=version, requested_department=department, requested_division=division, requested_business_line=business_line)
     return {"message": "File processed via Vector pipeline", "document_id": doc.id}
 
 @router.post("/hybrid", summary="Upload Hybrid Document", description="Process and extract text from a document without generating embeddings immediately.", dependencies=[Depends(RequireRole([Role.ADMIN, Role.HR, Role.FINANCE_MANAGER, Role.TECHNICAL_MANAGER]))])
@@ -42,11 +44,13 @@ async def upload_hybrid(
     title: Optional[str] = Form(None),
     description: Optional[str] = Form(None),
     department: Optional[str] = Form(None),
+    division: Optional[str] = Form(None),
+    business_line: Optional[str] = Form(None),
     version: Optional[int] = Form(1),
     current_user: UserInDB = Depends(get_current_user),
     db: AsyncIOMotorDatabase = Depends(get_database)
 ):
     validate_file(file)
     service = IngestionService(db)
-    doc = await service.process_upload(file, current_user, "hybrid", title=title, description=description, version=version, requested_department=department)
+    doc = await service.process_upload(file, current_user, "hybrid", title=title, description=description, version=version, requested_department=department, requested_division=division, requested_business_line=business_line)
     return {"message": "File processed via Hybrid pipeline", "document_id": doc.id}

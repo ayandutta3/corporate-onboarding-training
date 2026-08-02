@@ -31,6 +31,7 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<UserRole>('user');
+  const [businessLine, setBusinessLine] = useState('');
 
   const [isLoading, setIsLoading] = useState(false);
   const [feedback, setFeedback] = useState<{ success: boolean; message: string } | null>(null);
@@ -45,8 +46,15 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({
     setFeedback(null);
 
     try {
+      const isCorporate = ['hr', 'finance_manager', 'admin'].includes(role);
       const res = await createAdminUser(
-        { email, password, role },
+        { 
+            email, 
+            password, 
+            role,
+            division: isCorporate ? 'Corporate' : 'BusinessLine',
+            businessLine: isCorporate ? undefined : businessLine
+        },
         currentUser.token || 'admin-token',
         backendUrl,
         isDemoMode
@@ -132,7 +140,12 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({
             <label className="block text-slate-300 mb-1">Assign Security Role</label>
             <select
               value={role}
-              onChange={(e) => setRole(e.target.value as UserRole)}
+              onChange={(e) => {
+                  setRole(e.target.value as UserRole);
+                  if (['hr', 'finance_manager', 'admin'].includes(e.target.value)) {
+                      setBusinessLine(''); // Reset business line for corporate users
+                  }
+              }}
               className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-amber-500 capitalize"
             >
               <option value="user">User (Standard RAG Search)</option>
@@ -142,6 +155,25 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({
               <option value="admin">Admin (Full System Access)</option>
             </select>
           </div>
+
+          {(role === 'technical_manager' || role === 'user') && (
+              <div>
+                <label className="block text-slate-300 mb-1">Assign Business Line</label>
+                <select
+                  value={businessLine}
+                  onChange={(e) => setBusinessLine(e.target.value)}
+                  required
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-amber-500"
+                >
+                  <option value="" disabled>Select a Business Line</option>
+                  <option value="Insurance">Insurance</option>
+                  <option value="Banking">Banking</option>
+                  <option value="Healthcare">Healthcare</option>
+                  <option value="Retail">Retail</option>
+                  <option value="Telecom">Telecom</option>
+                </select>
+              </div>
+          )}
 
           <button
             type="submit"
