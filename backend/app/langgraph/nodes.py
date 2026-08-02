@@ -211,28 +211,30 @@ Answer:"""
     state["llm_response"] = response.content
     return state
 
+from app.search.ragas_service import RagasEvaluatorService
+
 async def evaluate_response(state: GraphState) -> GraphState:
     if not state.get("retrieved_chunks"):
         state["evaluation_score"] = "pass"
         state["final_answer"] = state["llm_response"]
+        if state.get("metrics"):
+            state["metrics"].ragas_metrics = None
         return state
         
-    prompt = PromptTemplate(
-        input_variables=["context", "answer"],
-        template="""Evaluate if the following Answer is supported by the Context.
-Reply ONLY with 'pass' if supported or 'fail' if it hallucinates information.
-
-Context:
-{context}
-
-Answer:
-{answer}"""
-    )
-    chain = prompt | llm
-    eval_response = await chain.ainvoke({"context": state["context_text"], "answer": state["llm_response"]})
-    score = eval_response.content.strip().lower()
+    contexts = [chunk["document"] for chunk in state.get("retrieved_chunks", []) if "document" in chunk]
     
-    if "fail" in score:
+    ragas_evaluator = RagasEvaluatorService()
+    ragas_metrics = await ragas_evaluator.evaluate_rag(
+        query=state["request"].query,
+        retrieved_contexts=contexts,
+        response=state["llm_response"]
+    )
+    
+    state["ragas_metrics"] = ragas_metrics
+    if state.get("metrics"):
+        state["metrics"].ragas_metrics = ragas_metrics
+    
+    if ragas_metrics.faithfulness < 0.5:
         state["evaluation_score"] = "fail"
         state["final_answer"] = "I apologize, but I could not formulate a reliable answer from the provided documents."
     else:
@@ -240,3 +242,4 @@ Answer:
         state["final_answer"] = state["llm_response"]
         
     return state
+

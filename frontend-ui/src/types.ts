@@ -30,12 +30,20 @@ export interface Citation {
   author?: string;
 }
 
+export interface RagasMetrics {
+  faithfulness: number;
+  answer_relevancy: number;
+  context_precision: number;
+  ragas_score: number;
+}
+
 export interface Metrics {
   prompt_tokens: number;
   completion_tokens: number;
   embedding_time_ms: number;
   retrieval_time_ms: number;
   total_time_ms?: number;
+  ragas_metrics?: RagasMetrics;
 }
 
 export interface SearchResponse {
@@ -47,6 +55,7 @@ export interface SearchResponse {
   mode?: SearchMode;
   timestamp?: string;
 }
+
 
 export interface Trace {
   id: string;

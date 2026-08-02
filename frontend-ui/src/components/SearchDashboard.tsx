@@ -469,6 +469,51 @@ export const SearchDashboard: React.FC<SearchDashboardProps> = ({
               </div>
             </div>
 
+            {/* RAGAS ASSESSMENT METRICS CARD BAR */}
+            {activeResponse.metrics.ragas_metrics && (
+              <div className="pt-4 border-t border-white/5">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5 text-purple-400">
+                    <Sparkles className="w-3.5 h-3.5" /> RAGAS Assessment Metrics (Python Package)
+                  </span>
+                  <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20">
+                    RAGAS Score: {(activeResponse.metrics.ragas_metrics.ragas_score * 100).toFixed(1)}%
+                  </span>
+                </h3>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="bg-purple-950/20 rounded-2xl p-3 border border-purple-500/20">
+                    <div className="text-[10px] text-purple-300/70 uppercase font-semibold">Faithfulness</div>
+                    <div className="text-lg font-mono font-bold text-purple-200 mt-0.5">
+                      {(activeResponse.metrics.ragas_metrics.faithfulness * 100).toFixed(1)}%
+                    </div>
+                  </div>
+
+                  <div className="bg-indigo-950/20 rounded-2xl p-3 border border-indigo-500/20">
+                    <div className="text-[10px] text-indigo-300/70 uppercase font-semibold">Answer Relevancy</div>
+                    <div className="text-lg font-mono font-bold text-indigo-200 mt-0.5">
+                      {(activeResponse.metrics.ragas_metrics.answer_relevancy * 100).toFixed(1)}%
+                    </div>
+                  </div>
+
+                  <div className="bg-emerald-950/20 rounded-2xl p-3 border border-emerald-500/20">
+                    <div className="text-[10px] text-emerald-300/70 uppercase font-semibold">Context Precision</div>
+                    <div className="text-lg font-mono font-bold text-emerald-200 mt-0.5">
+                      {(activeResponse.metrics.ragas_metrics.context_precision * 100).toFixed(1)}%
+                    </div>
+                  </div>
+
+                  <div className="bg-amber-950/20 rounded-2xl p-3 border border-amber-500/20">
+                    <div className="text-[10px] text-amber-300/70 uppercase font-semibold">Overall RAGAS Score</div>
+                    <div className="text-lg font-mono font-bold text-amber-200 mt-0.5">
+                      {(activeResponse.metrics.ragas_metrics.ragas_score * 100).toFixed(1)}%
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+
             {/* EXPANDABLE CITATIONS SECTION */}
             <div className="pt-4 border-t border-white/5 space-y-3">
               <div className="flex items-center justify-between">

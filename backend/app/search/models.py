@@ -21,6 +21,12 @@ class HybridSearchRequest(BaseModel):
     status: Optional[str] = None
     version: Optional[int] = None
 
+class RagasMetrics(BaseModel):
+    faithfulness: float
+    answer_relevancy: float
+    context_precision: float
+    ragas_score: float
+
 class Metrics(BaseModel):
     embedding_time_ms: int
     retrieval_time_ms: int
@@ -29,8 +35,10 @@ class Metrics(BaseModel):
     prompt_tokens: int
     completion_tokens: int
     total_tokens: int
+    ragas_metrics: Optional[RagasMetrics] = None
 
 class SearchResponse(BaseModel):
     answer: str
     citations: List[Citation]
     metrics: Metrics
+

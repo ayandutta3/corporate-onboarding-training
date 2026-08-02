@@ -15,9 +15,11 @@ import { PolicyHub } from './components/PolicyHub';
 import { UserManagementModal } from './components/UserManagementModal';
 import { SettingsModal } from './components/SettingsModal';
 
+import { RagasReportView } from './components/RagasReportView';
+
 export default function App() {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
-  const [activeTab, setActiveTab] = useState<'search' | 'upload' | 'monitoring' | 'policy' | 'users'>('search');
+  const [activeTab, setActiveTab] = useState<'search' | 'upload' | 'monitoring' | 'policy' | 'users' | 'ragas_report'>('search');
 
   const [backendUrl, setBackendUrl] = useState<string>(DEFAULT_BACKEND_URL);
   const [isDemoMode, setIsDemoMode] = useState<boolean>(true);
@@ -107,7 +109,12 @@ export default function App() {
             isDemoMode={isDemoMode}
           />
         )}
+
+        {activeTab === 'ragas_report' && (
+          <RagasReportView user={currentUser} backendUrl={backendUrl} />
+        )}
       </main>
+
 
       {/* Admin User Provisioning Modal */}
       <UserManagementModal

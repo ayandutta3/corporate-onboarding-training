@@ -1,6 +1,6 @@
 from typing import TypedDict, List, Dict, Any, Optional
 from app.ingestion.models import DocumentModel
-from app.search.models import HybridSearchRequest, Citation, Metrics
+from app.search.models import HybridSearchRequest, Citation, Metrics, RagasMetrics
 from app.authentication.models import UserInDB
 
 class GraphState(TypedDict):
@@ -17,8 +17,10 @@ class GraphState(TypedDict):
     context_text: str
     llm_response: str
     evaluation_score: Optional[str]
+    ragas_metrics: Optional[RagasMetrics]
     
     # Outputs
     final_answer: str
     citations: List[Citation]
     metrics: Metrics
+

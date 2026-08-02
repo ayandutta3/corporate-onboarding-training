@@ -8,6 +8,16 @@ from typing import Optional
 settings = get_settings()
 router = APIRouter(prefix="/monitoring", tags=["Monitoring"])
 
+from pydantic import BaseModel
+from typing import List, Optional
+from app.search.ragas_service import RagasEvaluatorService
+from app.search.models import RagasMetrics
+
+class RagasEvalRequest(BaseModel):
+    query: str
+    contexts: List[str]
+    response: str
+
 @router.get("/traces", summary="Get Execution Traces", description="Retrieves execution traces from Langfuse for monitoring. Available to all roles.")
 async def get_traces(
     user_id: Optional[str] = None,
@@ -40,3 +50,17 @@ async def get_traces(
                 status_code=status.HTTP_502_BAD_GATEWAY,
                 detail=f"Failed to fetch traces from Langfuse: {str(e)}"
             )
+
+@router.post("/ragas-eval", response_model=RagasMetrics, summary="Evaluate RAG Response with RAGAS", description="Evaluates a query, context, and response triplet using the RAGAS Python package.")
+async def evaluate_ragas_sample(
+    request: RagasEvalRequest,
+    current_user: UserInDB = Depends(get_current_user)
+):
+    evaluator = RagasEvaluatorService()
+    metrics = await evaluator.evaluate_rag(
+        query=request.query,
+        retrieved_contexts=request.contexts,
+        response=request.response
+    )
+    return metrics
+

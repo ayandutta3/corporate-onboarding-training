@@ -21,8 +21,9 @@ import {
 
 interface NavbarProps {
   user: AuthUser;
-  activeTab: 'search' | 'upload' | 'monitoring' | 'users';
-  setActiveTab: (tab: 'search' | 'upload' | 'monitoring' | 'users') => void;
+  activeTab: 'search' | 'upload' | 'monitoring' | 'policy' | 'users' | 'ragas_report';
+  setActiveTab: (tab: 'search' | 'upload' | 'monitoring' | 'policy' | 'users' | 'ragas_report') => void;
+
   onLogout: () => void;
   onSwitchUser: (persona: AuthUser) => void;
   onOpenSettings: () => void;
@@ -154,18 +155,33 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
 
             {user.role === 'admin' && (
-              <button
-                onClick={onOpenUserModal}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold tracking-wide transition-all ${
-                  activeTab === 'users'
-                    ? 'bg-white/10 text-white border border-white/10 shadow-md'
-                    : 'text-slate-400 hover:text-white hover:bg-white/5'
-                }`}
-              >
-                <Users className="w-4 h-4" />
-                User Admin
-              </button>
+              <>
+                <button
+                  onClick={() => setActiveTab('ragas_report')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold tracking-wide transition-all ${
+                    activeTab === 'ragas_report'
+                      ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40 shadow-md'
+                      : 'text-slate-400 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <Sparkles className="w-4 h-4 text-purple-400" />
+                  RAGAS Report
+                </button>
+
+                <button
+                  onClick={onOpenUserModal}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold tracking-wide transition-all ${
+                    activeTab === 'users'
+                      ? 'bg-white/10 text-white border border-white/10 shadow-md'
+                      : 'text-slate-400 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <Users className="w-4 h-4" />
+                  User Admin
+                </button>
+              </>
             )}
+
           </nav>
 
           {/* Right Action Controls & Status */}
