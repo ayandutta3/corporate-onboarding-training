@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { AuthUser, IngestionMode, UploadedDoc } from '../types';
-import { getActiveDocuments, uploadDocument } from '../services/api';
+import { getActiveDocuments, uploadDocument, analyzeDocument } from '../services/api';
 import {
   UploadCloud,
   FileText,
@@ -61,6 +61,11 @@ export const UploadPortal: React.FC<UploadPortalProps> = ({
   const [docList, setDocList] = useState<UploadedDoc[]>(getActiveDocuments());
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [showAnalysisModal, setShowAnalysisModal] = useState(false);
+  const [editedSummary, setEditedSummary] = useState('');
+  const [editedTags, setEditedTags] = useState('');
+
   const handleFileDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
@@ -74,8 +79,7 @@ export const UploadPortal: React.FC<UploadPortalProps> = ({
     }
   };
 
-  const handleUploadSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const executeUpload = async (overrideSummary?: string, overrideTags?: string) => {
     if (!selectedFile) return;
 
     setIsUploading(true);
@@ -101,7 +105,9 @@ export const UploadPortal: React.FC<UploadPortalProps> = ({
         docTitle,
         docDescription,
         customTags,
-        autofillTags
+        autofillTags,
+        overrideSummary,
+        overrideTags
       );
 
       clearInterval(interval);
@@ -112,11 +118,42 @@ export const UploadPortal: React.FC<UploadPortalProps> = ({
       setDocTitle('');
       setDocDescription('');
       setCustomTags('');
+      setEditedSummary('');
+      setEditedTags('');
+      setShowAnalysisModal(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     } catch (err) {
       console.error('Error during document ingestion:', err);
+      alert('Upload failed. Please check backend server status or file format.');
     } finally {
       setIsUploading(false);
     }
+  };
+
+  const handleUploadSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedFile) return;
+
+    if (ingestionMode === 'hybrid' && isManagerOrAdmin && !showAnalysisModal) {
+      setIsAnalyzing(true);
+      try {
+        const result = await analyzeDocument(selectedFile, user.token || 'demo-token', backendUrl);
+        setEditedSummary(result.summary || '');
+        setEditedTags(result.tags ? result.tags.join(', ') : '');
+        setShowAnalysisModal(true);
+      } catch (err) {
+        console.error('Error during document analysis:', err);
+        // Fallback to direct upload if analysis pre-step fails
+        await executeUpload();
+      } finally {
+        setIsAnalyzing(false);
+      }
+      return;
+    }
+
+    await executeUpload();
   };
 
 
@@ -354,12 +391,16 @@ export const UploadPortal: React.FC<UploadPortalProps> = ({
           <div className="flex justify-end">
             <button
               type="submit"
-              disabled={!selectedFile || isUploading}
+              disabled={!selectedFile || isUploading || isAnalyzing}
               className="px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-wider bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white shadow-lg shadow-indigo-500/20 flex items-center gap-2 transition-all disabled:opacity-50"
             >
               {isUploading ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" /> Ingesting Document...
+                </>
+              ) : isAnalyzing ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" /> Analyzing Document...
                 </>
               ) : (
                 <>
@@ -436,6 +477,89 @@ export const UploadPortal: React.FC<UploadPortalProps> = ({
           </table>
         </div>
       </div>
+
+      {/* AI Analysis & Edit Modal */}
+      {showAnalysisModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md transition-all duration-300 animate-in fade-in">
+          <div className="relative w-full max-w-2xl rounded-3xl bg-[#0e1117] border border-indigo-500/30 p-6 sm:p-8 shadow-2xl shadow-indigo-500/10 space-y-6 overflow-hidden">
+            {/* Ambient background light in modal */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-72 h-72 bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none" />
+            
+            <div className="flex items-center gap-3 border-b border-white/5 pb-4 relative z-10">
+              <div className="p-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+                <Cpu className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-outfit text-lg font-bold text-white">Review Generated AI Metadata</h3>
+                <p className="text-xs text-slate-400">Pre-ingestion hybrid analysis generated by LLM</p>
+              </div>
+            </div>
+
+            <div className="space-y-4 relative z-10">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5 flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5 text-indigo-400" />
+                  AI Summary
+                </label>
+                <textarea
+                  value={editedSummary}
+                  onChange={(e) => setEditedSummary(e.target.value)}
+                  rows={6}
+                  className="w-full px-4 py-3 bg-black/40 border border-white/10 rounded-xl text-xs text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition-all font-sans leading-relaxed resize-none"
+                  placeholder="Enter document summary..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5 flex items-center gap-1.5">
+                  <Zap className="w-3.5 h-3.5 text-indigo-400" />
+                  AI Tags (Comma-separated)
+                </label>
+                <input
+                  type="text"
+                  value={editedTags}
+                  onChange={(e) => setEditedTags(e.target.value)}
+                  className="w-full px-4 py-3 bg-black/40 border border-white/10 rounded-xl text-xs text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition-all font-mono"
+                  placeholder="tag1, tag2, tag3"
+                />
+                <p className="text-[10px] text-slate-500 mt-1">
+                  Separate tags with commas. These tags will be registered in the metadata index.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/5 relative z-10">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAnalysisModal(false);
+                  setSelectedFile(null);
+                  if (fileInputRef.current) fileInputRef.current.value = '';
+                }}
+                className="px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => executeUpload(editedSummary, editedTags)}
+                disabled={isUploading}
+                className="px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white shadow-lg shadow-indigo-500/20 flex items-center gap-2 transition-all disabled:opacity-50"
+              >
+                {isUploading ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" /> Ingesting...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" /> Confirm & Ingest
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

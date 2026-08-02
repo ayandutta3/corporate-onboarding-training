@@ -10,7 +10,7 @@ class SemanticCacheService:
         if cls._instance is None:
             cls._instance = super(SemanticCacheService, cls).__new__(cls)
             cls._instance.cache = [] # List of dicts
-            cls._instance.threshold = 0.80
+            cls._instance.threshold = 0.92
             cls._instance.embedding_service = EmbeddingService()
         return cls._instance
 
@@ -24,6 +24,9 @@ class SemanticCacheService:
         if norm1 == 0.0 or norm2 == 0.0:
             return 0.0
         return dot_product / (norm1 * norm2)
+
+    def clear(self):
+        self.cache = []
 
     async def get(self, query: str, role: str, mode: str) -> Optional[Dict[str, Any]]:
         query_embedding, _ = await self.embedding_service.generate_embedding(query)
@@ -42,13 +45,14 @@ class SemanticCacheService:
             return {
                 "answer": best_match["answer"],
                 "citations": best_match["citations"],
+                "ragas_metrics": best_match.get("ragas_metrics"),
                 "similarity_score": round(best_score, 3),
                 "cached": True
             }
             
         return None
 
-    async def put(self, query: str, role: str, mode: str, answer: str, citations: List[Any]):
+    async def put(self, query: str, role: str, mode: str, answer: str, citations: List[Any], ragas_metrics: Optional[Any] = None):
         query_embedding, _ = await self.embedding_service.generate_embedding(query)
         self.cache.append({
             "query": query,
@@ -57,6 +61,7 @@ class SemanticCacheService:
             "embedding": query_embedding,
             "answer": answer,
             "citations": citations,
+            "ragas_metrics": ragas_metrics,
             "timestamp": time.time()
         })
         # Limit cache size to 100 entries
