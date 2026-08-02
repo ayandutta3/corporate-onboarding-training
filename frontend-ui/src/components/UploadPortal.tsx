@@ -52,6 +52,8 @@ export const UploadPortal: React.FC<UploadPortalProps> = ({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [docTitle, setDocTitle] = useState('');
   const [docDescription, setDocDescription] = useState('');
+  const [customTags, setCustomTags] = useState('');
+  const [autofillTags, setAutofillTags] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [lastUploadedDoc, setLastUploadedDoc] = useState<UploadedDoc | null>(null);
@@ -97,7 +99,9 @@ export const UploadPortal: React.FC<UploadPortalProps> = ({
         user.token || 'demo-token',
         backendUrl,
         docTitle,
-        docDescription
+        docDescription,
+        customTags,
+        autofillTags
       );
 
       clearInterval(interval);
@@ -107,12 +111,14 @@ export const UploadPortal: React.FC<UploadPortalProps> = ({
       setSelectedFile(null);
       setDocTitle('');
       setDocDescription('');
+      setCustomTags('');
     } catch (err) {
       console.error('Error during document ingestion:', err);
     } finally {
       setIsUploading(false);
     }
   };
+
 
   if (!isManagerOrAdmin) {
     return (
@@ -215,7 +221,7 @@ export const UploadPortal: React.FC<UploadPortalProps> = ({
             </div>
           </div>
 
-          {/* Title and Description */}
+          {/* Title, Description, and Custom Tags metadata form */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
@@ -226,7 +232,7 @@ export const UploadPortal: React.FC<UploadPortalProps> = ({
                 value={docTitle}
                 onChange={(e) => setDocTitle(e.target.value)}
                 placeholder="e.g. Q3 Townhall Recording"
-                className="w-full px-4 py-2.5 bg-black/40 border border-white/10 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500"
+                className="w-full px-4 py-2.5 bg-black/40 border border-white/10 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500 font-sans"
               />
             </div>
             <div>
@@ -238,10 +244,52 @@ export const UploadPortal: React.FC<UploadPortalProps> = ({
                 value={docDescription}
                 onChange={(e) => setDocDescription(e.target.value)}
                 placeholder="Brief summary for vector context..."
-                className="w-full px-4 py-2.5 bg-black/40 border border-white/10 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500"
+                className="w-full px-4 py-2.5 bg-black/40 border border-white/10 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500 font-sans"
               />
             </div>
           </div>
+
+          {/* AI Autofill Toggle & Additional Custom Tags */}
+          <div className="p-4 rounded-2xl bg-black/40 border border-white/5 space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={autofillTags}
+                  onChange={(e) => setAutofillTags(e.target.checked)}
+                  className="w-4 h-4 rounded border-white/20 bg-white/5 text-indigo-500 focus:ring-indigo-500/30"
+                />
+                <div>
+                  <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <Zap className="w-3.5 h-3.5 text-indigo-400" />
+                    Auto-generate Metadata & Tags with AI
+                  </span>
+                  <p className="text-[11px] text-slate-400">
+                    If checked, document tags are automatically extracted using AI summary analysis.
+                  </p>
+                </div>
+              </label>
+            </div>
+
+            {!autofillTags && (
+              <div className="pt-2 border-t border-white/5 animate-in fade-in">
+                <label className="block text-xs font-bold uppercase tracking-wider text-indigo-300 mb-1.5">
+                  User Custom Tags (Comma-separated)
+                </label>
+                <input
+                  type="text"
+                  value={customTags}
+                  onChange={(e) => setCustomTags(e.target.value)}
+                  placeholder="e.g. Policy2026, WFH, Mandatory, Confidential"
+                  className="w-full px-4 py-2 bg-white/5 border border-indigo-500/30 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono"
+                />
+                <p className="text-[10px] text-slate-400 mt-1">
+                  Custom tags entered here will be appended to the document metadata alongside AI summary tags.
+                </p>
+              </div>
+            )}
+          </div>
+
 
           {/* Drag & Drop Dropzone Bento style */}
           <div

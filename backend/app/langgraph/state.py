@@ -18,9 +18,12 @@ class GraphState(TypedDict):
     llm_response: str
     evaluation_score: Optional[str]
     ragas_metrics: Optional[RagasMetrics]
+    user_long_term_facts: List[str]
+    is_cached: bool
     
     # Outputs
     final_answer: str
     citations: List[Citation]
     metrics: Metrics
+
 

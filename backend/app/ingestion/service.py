@@ -29,7 +29,7 @@ class IngestionService:
             return "Engineering", "Technical"
         return "General", "General"
 
-    async def process_upload(self, file: UploadFile, user: UserInDB, pipeline_type: str, title: str = None, description: str = None, version: int = 1, requested_department: str = None):
+    async def process_upload(self, file: UploadFile, user: UserInDB, pipeline_type: str, title: str = None, description: str = None, version: int = 1, requested_department: str = None, user_tags_str: str = None, autofill_tags: bool = True):
         department, knowledge_type = self._determine_metadata_from_role(user.role)
         
         if user.role == Role.ADMIN and requested_department:
@@ -49,9 +49,16 @@ class IngestionService:
             extracted_text = f"Title: {title or file.filename}\nDescription: {description}\n\n{extracted_text}"
             
         # 3. AI Summary & Tags
-        summary, tags = await generate_ai_summary_and_tags(extracted_text)
+        summary, generated_tags = await generate_ai_summary_and_tags(extracted_text)
         
-        # 4. Create Document Model
+        # 4. Handle Tags based on autofill_tags flag
+        final_tags = generated_tags or []
+        if not autofill_tags and user_tags_str:
+            custom_tags = [t.strip() for t in user_tags_str.split(',') if t.strip()]
+            # Append user custom tags to generated tags
+            final_tags = list(dict.fromkeys(final_tags + custom_tags))
+        
+        # 5. Create Document Model
         doc = DocumentModel(
             filename=file.filename,
             file_path=dest_path,
@@ -62,10 +69,11 @@ class IngestionService:
             description=description,
             extracted_text=extracted_text,
             ai_summary=summary,
-            ai_tags=tags,
+            ai_tags=final_tags,
             embedding_generated=False,
             version=version
         )
+
         
         # 5. Pipeline Specific Logic
         if pipeline_type == "vector":

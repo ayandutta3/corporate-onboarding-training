@@ -36,9 +36,12 @@ class Metrics(BaseModel):
     completion_tokens: int
     total_tokens: int
     ragas_metrics: Optional[RagasMetrics] = None
+    semantic_cache_hit: Optional[bool] = False
+    cache_similarity: Optional[float] = None
 
 class SearchResponse(BaseModel):
     answer: str
     citations: List[Citation]
     metrics: Metrics
+
 

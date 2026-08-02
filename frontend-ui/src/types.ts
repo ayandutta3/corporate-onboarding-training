@@ -44,7 +44,10 @@ export interface Metrics {
   retrieval_time_ms: number;
   total_time_ms?: number;
   ragas_metrics?: RagasMetrics;
+  semantic_cache_hit?: boolean;
+  cache_similarity?: number;
 }
+
 
 export interface SearchResponse {
   answer: string;

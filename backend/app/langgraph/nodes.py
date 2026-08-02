@@ -153,15 +153,20 @@ async def vector_search(state: GraphState) -> GraphState:
     state["retrieved_chunks"] = results
     return state
 
+from app.ingestion.pii_scrubber import scrub_pii_for_llm
+from app.search.memory_service import MemoryService
+
 async def prompt_builder(state: GraphState) -> GraphState:
     context_text = ""
     citations = []
     seen_documents = set()
     
     for i, res in enumerate(state.get("retrieved_chunks", [])):
-        doc = res["document"]
+        raw_doc = res["document"]
         meta = res["metadata"]
-        context_text += f"\n--- Source {i+1} ---\n{doc}\n"
+        # Scrub PII strictly for LLM Context Window (MongoDB raw text remains intact)
+        scrubbed_doc = scrub_pii_for_llm(raw_doc)
+        context_text += f"\n--- Source {i+1} ---\n{scrubbed_doc}\n"
         
         doc_name = meta.get("document_name", "Unknown")
         if doc_name not in seen_documents:
@@ -173,9 +178,16 @@ async def prompt_builder(state: GraphState) -> GraphState:
                 section=meta.get("section"),
                 timestamp=meta.get("timestamp")
             ))
-        
+            
+    # Fetch Long-Term Memory Facts for User
+    db = state["db_client"]
+    user = state["user"]
+    memory_service = MemoryService(db)
+    long_term_facts = await memory_service.get_user_long_term_facts(user.email, user.role.value)
+    
     state["context_text"] = context_text
     state["citations"] = citations
+    state["user_long_term_facts"] = long_term_facts
     return state
 
 async def generate_response(state: GraphState) -> GraphState:
@@ -183,15 +195,20 @@ async def generate_response(state: GraphState) -> GraphState:
         state["llm_response"] = "I don't have enough information to answer that based on your access level or current search filters."
         return state
         
+    memory_context = ""
+    if state.get("user_long_term_facts"):
+        facts_str = "\n".join([f"- {f}" for f in state["user_long_term_facts"]])
+        memory_context = f"\nUser Long-Term Memory & Role Context:\n{facts_str}\n"
+
     prompt = PromptTemplate(
-        input_variables=["context", "question"],
+        input_variables=["context", "memory_context", "question"],
         template="""You are a helpful corporate onboarding and training assistant.
-Use the following pieces of retrieved context to answer the user's question.
+Use the following pieces of retrieved context and user memory to answer the user's question accurately.
 If the answer is not in the context, say "I don't know based on the provided documents."
 
 Context:
 {context}
-
+{memory_context}
 Question:
 {question}
 
@@ -199,7 +216,11 @@ Answer:"""
     )
     
     chain = prompt | llm
-    response = await chain.ainvoke({"context": state["context_text"], "question": state["request"].query})
+    response = await chain.ainvoke({
+        "context": state["context_text"], 
+        "memory_context": memory_context,
+        "question": state["request"].query
+    })
     
     usage = getattr(response, "usage_metadata", {}) or {}
     token_usage = response.response_metadata.get("token_usage", {})
@@ -210,6 +231,7 @@ Answer:"""
     
     state["llm_response"] = response.content
     return state
+
 
 from app.search.ragas_service import RagasEvaluatorService
 
@@ -241,5 +263,20 @@ async def evaluate_response(state: GraphState) -> GraphState:
         state["evaluation_score"] = "pass"
         state["final_answer"] = state["llm_response"]
         
+    # Save conversation turn to MemoryService (Short-Term & Long-Term Memory)
+    try:
+        db = state["db_client"]
+        user = state["user"]
+        memory_service = MemoryService(db)
+        await memory_service.add_short_term_turn(
+            user_email=user.email,
+            role=user.role.value,
+            query=state["request"].query,
+            answer=state["final_answer"]
+        )
+    except Exception:
+        pass
+        
     return state
+
 

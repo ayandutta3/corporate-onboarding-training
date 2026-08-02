@@ -112,7 +112,9 @@ export async function uploadDocument(
   token: string,
   backendUrl: string = DEFAULT_BACKEND_URL,
   title?: string,
-  description?: string
+  description?: string,
+  tags?: string,
+  autofillTags: boolean = true
 ): Promise<UploadedDoc> {
   const endpoint = mode === 'hybrid' ? '/upload/hybrid' : '/upload/vector';
   
@@ -122,6 +124,8 @@ export async function uploadDocument(
   formData.append('department', department);
   if (title) formData.append('title', title);
   if (description) formData.append('description', description);
+  if (tags) formData.append('tags', tags);
+  formData.append('autofill_tags', autofillTags ? 'true' : 'false');
 
   const res = await fetch(`${backendUrl}${endpoint}`, {
     method: 'POST',
@@ -130,6 +134,7 @@ export async function uploadDocument(
     },
     body: formData,
   });
+
 
   if (!res.ok) {
     throw new Error('Upload failed.');

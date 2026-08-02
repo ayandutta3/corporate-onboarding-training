@@ -27,12 +27,34 @@ if settings.langfuse_host:
 router = APIRouter(prefix="/search", tags=["Search"])
 graph = build_search_graph()
 
+from app.search.semantic_cache import SemanticCacheService
+from app.search.models import Metrics
+
+cache_service = SemanticCacheService()
+
 @router.post("/vector", response_model=SearchResponse, summary="Perform a vector search", description="Executes LangGraph RAG pipeline using pure vector similarity.")
 async def search_vector(
     request: SearchRequest,
     current_user: UserInDB = Depends(get_current_user),
     db: AsyncIOMotorDatabase = Depends(get_database)
 ):
+    # Check 0.80 threshold Semantic Cache
+    cached_res = await cache_service.get(request.query, current_user.role.value, "vector")
+    if cached_res:
+        return SearchResponse(
+            answer=cached_res["answer"],
+            citations=cached_res["citations"],
+            metrics=Metrics(
+                embedding_time_ms=0,
+                retrieval_time_ms=0,
+                prompt_tokens=0,
+                completion_tokens=0,
+                total_tokens=0,
+                semantic_cache_hit=True,
+                cache_similarity=cached_res["similarity_score"]
+            )
+        )
+
     initial_state = GraphState(
         search_type="vector",
         request=request,
@@ -46,11 +68,12 @@ async def search_vector(
         evaluation_score=None,
         final_answer="",
         citations=[],
-        metrics=None
+        metrics=None,
+        user_long_term_facts=[],
+        is_cached=False
     )
     
     langfuse_handler = CallbackHandler()
-    
     run_config = {
         "callbacks": [langfuse_handler],
         "metadata": {
@@ -62,6 +85,16 @@ async def search_vector(
     
     final_state = await graph.ainvoke(initial_state, config=run_config)
     
+    # Store in Semantic Cache
+    if final_state.get("final_answer"):
+        await cache_service.put(
+            query=request.query,
+            role=current_user.role.value,
+            mode="vector",
+            answer=final_state["final_answer"],
+            citations=final_state["citations"]
+        )
+
     return SearchResponse(
         answer=final_state["final_answer"],
         citations=final_state["citations"],
@@ -74,6 +107,23 @@ async def search_hybrid(
     current_user: UserInDB = Depends(get_current_user),
     db: AsyncIOMotorDatabase = Depends(get_database)
 ):
+    # Check 0.80 threshold Semantic Cache
+    cached_res = await cache_service.get(request.query, current_user.role.value, "hybrid")
+    if cached_res:
+        return SearchResponse(
+            answer=cached_res["answer"],
+            citations=cached_res["citations"],
+            metrics=Metrics(
+                embedding_time_ms=0,
+                retrieval_time_ms=0,
+                prompt_tokens=0,
+                completion_tokens=0,
+                total_tokens=0,
+                semantic_cache_hit=True,
+                cache_similarity=cached_res["similarity_score"]
+            )
+        )
+
     initial_state = GraphState(
         search_type="hybrid",
         request=request,
@@ -87,11 +137,12 @@ async def search_hybrid(
         evaluation_score=None,
         final_answer="",
         citations=[],
-        metrics=None
+        metrics=None,
+        user_long_term_facts=[],
+        is_cached=False
     )
     
     langfuse_handler = CallbackHandler()
-    
     run_config = {
         "callbacks": [langfuse_handler],
         "metadata": {
@@ -103,8 +154,19 @@ async def search_hybrid(
     
     final_state = await graph.ainvoke(initial_state, config=run_config)
     
+    # Store in Semantic Cache
+    if final_state.get("final_answer"):
+        await cache_service.put(
+            query=request.query,
+            role=current_user.role.value,
+            mode="hybrid",
+            answer=final_state["final_answer"],
+            citations=final_state["citations"]
+        )
+
     return SearchResponse(
         answer=final_state["final_answer"],
         citations=final_state["citations"],
         metrics=final_state["metrics"]
     )
+

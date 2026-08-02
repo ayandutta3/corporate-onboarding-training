@@ -302,10 +302,24 @@ export const SearchDashboard: React.FC<SearchDashboardProps> = ({
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-3 duration-300">
           {/* Main Answer Card */}
           <div className="rounded-3xl bg-[#0e1117] border border-white/10 p-6 sm:p-8 shadow-2xl space-y-6 relative">
-            {/* AI Generated Badge */}
-            <div className="absolute top-6 right-6 py-1 px-3 bg-indigo-500/10 border border-indigo-500/20 rounded-full flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-indigo-400" />
-              <span className="text-[10px] uppercase font-black text-indigo-300 tracking-tighter">AI Generated Response</span>
+            {/* AI Generated & Security Badges */}
+            <div className="absolute top-6 right-6 flex flex-wrap items-center gap-2">
+              {activeResponse.metrics?.semantic_cache_hit && (
+                <div className="py-1 px-3 bg-emerald-500/10 border border-emerald-500/30 rounded-full flex items-center gap-1.5">
+                  <Zap className="w-3 h-3 text-emerald-400" />
+                  <span className="text-[10px] uppercase font-black text-emerald-300 tracking-tighter">
+                    Cache Hit ({activeResponse.metrics.cache_similarity ? (activeResponse.metrics.cache_similarity * 100).toFixed(0) : 80}% Sim)
+                  </span>
+                </div>
+              )}
+              <div className="py-1 px-3 bg-cyan-500/10 border border-cyan-500/20 rounded-full flex items-center gap-1.5">
+                <ShieldCheck className="w-3 h-3 text-cyan-400" />
+                <span className="text-[10px] uppercase font-black text-cyan-300 tracking-tighter">LLM PII Redacted (Mongo Raw Intact)</span>
+              </div>
+              <div className="py-1 px-3 bg-purple-500/10 border border-purple-500/20 rounded-full flex items-center gap-1.5">
+                <Sparkles className="w-3 h-3 text-purple-400" />
+                <span className="text-[10px] uppercase font-black text-purple-300 tracking-tighter">Role Memory Active</span>
+              </div>
             </div>
 
             {/* Header / Mode & Actions */}
@@ -332,6 +346,7 @@ export const SearchDashboard: React.FC<SearchDashboardProps> = ({
                   </p>
                 </div>
               </div>
+
 
               {/* Action Toolbar */}
               <div className="flex items-center gap-2 pr-32 sm:pr-0">
