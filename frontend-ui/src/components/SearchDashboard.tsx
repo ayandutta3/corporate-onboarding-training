@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { AuthUser, Citation, SearchFilters, SearchResponse, SearchMode } from '../types';
-import { SUGGESTED_QUERIES } from '../data/mockData';
 import { searchRAG } from '../services/api';
 import { DocumentPreviewModal } from './DocumentPreviewModal';
 import {
@@ -38,13 +37,11 @@ import {
 interface SearchDashboardProps {
   user: AuthUser;
   backendUrl: string;
-  isDemoMode: boolean;
 }
 
 export const SearchDashboard: React.FC<SearchDashboardProps> = ({
   user,
   backendUrl,
-  isDemoMode,
 }) => {
   const [query, setQuery] = useState('');
   const [searchMode, setSearchMode] = useState<SearchMode>('hybrid');
@@ -75,7 +72,7 @@ export const SearchDashboard: React.FC<SearchDashboardProps> = ({
     };
 
     try {
-      const response = await searchRAG(searchQuery, searchMode, filters, user, backendUrl, isDemoMode);
+      const response = await searchRAG(searchQuery, searchMode, filters, user, backendUrl);
       setActiveResponse(response);
       setHistory((prev) => [response, ...prev.slice(0, 4)]);
     } catch (err) {
@@ -236,41 +233,7 @@ export const SearchDashboard: React.FC<SearchDashboardProps> = ({
           </div>
         </form>
 
-        {/* Suggested Queries Prompts */}
-        {!activeResponse && !isLoading && (
-          <div className="mt-8 pt-6 border-t border-white/5">
-            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-indigo-400" /> Frequently Asked Corporate Prompts
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {SUGGESTED_QUERIES.map((sq, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => {
-                    setQuery(sq.query);
-                    handleSearch(sq.query);
-                  }}
-                  className="bg-white/5 hover:bg-white/10 border border-white/10 p-4 rounded-2xl text-left flex flex-col justify-between space-y-2 transition-all group"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="p-2 rounded-xl bg-black/40 border border-white/5 group-hover:border-indigo-500/30">
-                      {renderIcon(sq.icon)}
-                    </span>
-                    <span className="text-[10px] font-mono text-slate-500 bg-black/40 px-2 py-0.5 rounded border border-white/5">
-                      {sq.department.split(' ')[0]}
-                    </span>
-                  </div>
-                  <div>
-                    <h3 className="text-xs font-bold text-white group-hover:text-indigo-300 transition-colors">
-                      {sq.title}
-                    </h3>
-                    <p className="text-[11px] text-slate-400 line-clamp-2 mt-1">{sq.query}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+
       </div>
 
       {/* Loading Skeleton */}

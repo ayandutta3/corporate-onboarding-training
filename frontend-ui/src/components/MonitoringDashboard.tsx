@@ -23,13 +23,11 @@ import {
 interface MonitoringDashboardProps {
   user: AuthUser;
   backendUrl: string;
-  isDemoMode: boolean;
 }
 
 export const MonitoringDashboard: React.FC<MonitoringDashboardProps> = ({
   user,
   backendUrl,
-  isDemoMode,
 }) => {
   const [traces, setTraces] = useState<Trace[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -41,7 +39,7 @@ export const MonitoringDashboard: React.FC<MonitoringDashboardProps> = ({
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const data = await fetchTraces(user.token || 'demo-token', backendUrl, isDemoMode);
+      const data = await fetchTraces(user.token || '', backendUrl);
       setTraces(data);
     } catch (err) {
       console.error('Error fetching Langfuse traces:', err);
@@ -52,7 +50,7 @@ export const MonitoringDashboard: React.FC<MonitoringDashboardProps> = ({
 
   useEffect(() => {
     loadData();
-  }, [backendUrl, isDemoMode]);
+  }, [backendUrl]);
 
   const filteredTraces = traces.filter((t) => {
     if (filterMode !== 'All' && t.search_mode !== filterMode.toLowerCase()) return false;

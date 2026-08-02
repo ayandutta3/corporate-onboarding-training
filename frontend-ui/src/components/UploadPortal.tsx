@@ -23,14 +23,12 @@ import {
 interface UploadPortalProps {
   user: AuthUser;
   backendUrl: string;
-  isDemoMode: boolean;
   onSwitchPersonaToManager?: () => void;
 }
 
 export const UploadPortal: React.FC<UploadPortalProps> = ({
   user,
   backendUrl,
-  isDemoMode,
   onSwitchPersonaToManager,
 }) => {
   const isManagerOrAdmin = ['admin', 'hr', 'finance_manager', 'technical_manager'].includes(user.role);
@@ -96,7 +94,7 @@ export const UploadPortal: React.FC<UploadPortalProps> = ({
         selectedFile,
         ingestionMode,
         selectedDepartment,
-        user.token || 'demo-token',
+        user.token || '',
         backendUrl,
         docTitle,
         docDescription,

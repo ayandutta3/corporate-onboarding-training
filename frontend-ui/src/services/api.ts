@@ -4,7 +4,6 @@ export const DEFAULT_BACKEND_URL = 'http://localhost:8000';
 
 export interface ApiState {
   backendUrl: string;
-  isDemoMode: boolean;
   isConnected: boolean | null;
   lastChecked: string | null;
 }
@@ -32,13 +31,12 @@ export async function checkBackendHealth(backendUrl: string = DEFAULT_BACKEND_UR
   try {
     const controller = new AbortController();
     const id = setTimeout(() => controller.abort(), 1500);
-    // /monitoring/traces will return 401 if unauthorized, which means the backend is ALIVE.
-    const res = await fetch(`${backendUrl}/monitoring/traces`, {
+    const res = await fetch(`${backendUrl}/health`, {
       method: 'GET',
       signal: controller.signal,
     });
     clearTimeout(id);
-    return res.ok || res.status === 401 || res.status === 403;
+    return res.ok;
   } catch {
     return false;
   }

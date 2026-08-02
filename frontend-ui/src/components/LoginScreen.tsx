@@ -19,14 +19,12 @@ import {
 interface LoginScreenProps {
   onLoginSuccess: (user: AuthUser, token: string) => void;
   backendUrl: string;
-  isDemoMode: boolean;
   onOpenSettings: () => void;
 }
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({
   onLoginSuccess,
   backendUrl,
-  isDemoMode,
   onOpenSettings,
 }) => {
   const [email, setEmail] = useState('admin@example.com');
@@ -43,7 +41,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
     setErrorMessage(null);
 
     try {
-      const { user, token } = await loginUser(email, password, backendUrl, isDemoMode);
+      const { user, token } = await loginUser(email, password, backendUrl);
       onLoginSuccess(user, token);
     } catch (err: any) {
       setErrorMessage(err.message || 'Login failed. Please check credentials or backend endpoint.');

@@ -27,8 +27,6 @@ interface NavbarProps {
   onSwitchUser: (persona: AuthUser) => void;
   onOpenSettings: () => void;
   onOpenUserModal: () => void;
-  isConnected: boolean | null;
-  isDemoMode: boolean;
   backendUrl: string;
 }
 
@@ -40,8 +38,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   onSwitchUser,
   onOpenSettings,
   onOpenUserModal,
-  isConnected,
-  isDemoMode,
   backendUrl,
 }) => {
   const [showPersonaMenu, setShowPersonaMenu] = useState(false);
@@ -170,35 +166,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Right Action Controls & Status */}
           <div className="flex items-center gap-2">
-            {/* Backend Connectivity Status Badge */}
-            <button
-              onClick={onOpenSettings}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono border transition-all ${
-                isConnected
-                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
-                  : isDemoMode
-                  ? 'bg-purple-500/10 text-purple-300 border-purple-500/30 hover:bg-purple-500/20'
-                  : 'bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20'
-              }`}
-              title="Click to configure FastAPI Backend Endpoint"
-            >
-              <span className="relative flex h-2 w-2">
-                <span
-                  className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
-                    isConnected ? 'bg-emerald-400' : isDemoMode ? 'bg-purple-400' : 'bg-amber-400'
-                  }`}
-                ></span>
-                <span
-                  className={`relative inline-flex rounded-full h-2 w-2 ${
-                    isConnected ? 'bg-emerald-500' : isDemoMode ? 'bg-purple-500' : 'bg-amber-500'
-                  }`}
-                ></span>
-              </span>
-              <Server className="w-3 h-3 hidden sm:inline" />
-              <span className="hidden sm:inline font-semibold">
-                {isConnected ? 'Backend Ready' : isDemoMode ? 'Demo RAG Mode' : 'Offline / Standby'}
-              </span>
-            </button>
+
 
             {/* Settings button */}
             <button

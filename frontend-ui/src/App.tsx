@@ -20,7 +20,6 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'search' | 'upload' | 'monitoring' | 'policy' | 'users'>('search');
 
   const [backendUrl, setBackendUrl] = useState<string>(DEFAULT_BACKEND_URL);
-  const [isDemoMode, setIsDemoMode] = useState<boolean>(true);
   const [isConnected, setIsConnected] = useState<boolean | null>(null);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -30,9 +29,6 @@ export default function App() {
   useEffect(() => {
     checkBackendHealth(backendUrl).then((healthy) => {
       setIsConnected(healthy);
-      if (healthy) {
-        setIsDemoMode(false); // Auto-connect to real local FastAPI backend if online
-      }
     });
   }, [backendUrl]);
 
@@ -53,7 +49,6 @@ export default function App() {
       <LoginScreen
         onLoginSuccess={handleLoginSuccess}
         backendUrl={backendUrl}
-        isDemoMode={isDemoMode}
         onOpenSettings={() => setIsSettingsOpen(true)}
       />
     );
@@ -74,7 +69,6 @@ export default function App() {
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenUserModal={() => setIsUserModalOpen(true)}
         isConnected={isConnected}
-        isDemoMode={isDemoMode}
         backendUrl={backendUrl}
       />
 
@@ -84,7 +78,6 @@ export default function App() {
           <SearchDashboard
             user={currentUser}
             backendUrl={backendUrl}
-            isDemoMode={isDemoMode}
           />
         )}
 
@@ -92,7 +85,6 @@ export default function App() {
           <UploadPortal
             user={currentUser}
             backendUrl={backendUrl}
-            isDemoMode={isDemoMode}
           />
         )}
 
@@ -104,7 +96,6 @@ export default function App() {
           <MonitoringDashboard
             user={currentUser}
             backendUrl={backendUrl}
-            isDemoMode={isDemoMode}
           />
         )}
       </main>
@@ -115,7 +106,6 @@ export default function App() {
         isOpen={isUserModalOpen}
         onClose={() => setIsUserModalOpen(false)}
         backendUrl={backendUrl}
-        isDemoMode={isDemoMode}
       />
 
       {/* Settings Modal */}
@@ -124,8 +114,6 @@ export default function App() {
         onClose={() => setIsSettingsOpen(false)}
         backendUrl={backendUrl}
         setBackendUrl={setBackendUrl}
-        isDemoMode={isDemoMode}
-        setIsDemoMode={setIsDemoMode}
         isConnected={isConnected}
         setIsConnected={setIsConnected}
       />

@@ -17,8 +17,6 @@ interface SettingsModalProps {
   onClose: () => void;
   backendUrl: string;
   setBackendUrl: (url: string) => void;
-  isDemoMode: boolean;
-  setIsDemoMode: (demo: boolean) => void;
   isConnected: boolean | null;
   setIsConnected: (status: boolean | null) => void;
 }
@@ -28,8 +26,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onClose,
   backendUrl,
   setBackendUrl,
-  isDemoMode,
-  setIsDemoMode,
   isConnected,
   setIsConnected,
 }) => {
@@ -114,33 +110,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           )}
 
-          {/* Mode Switcher */}
-          <div className="p-4 bg-slate-950 rounded-2xl border border-slate-800 space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="font-bold text-white flex items-center gap-1.5">
-                  <Zap className="w-3.5 h-3.5 text-purple-400" /> Force Demo / Simulated Mode
-                </div>
-                <div className="text-[11px] text-slate-400 mt-0.5">
-                  Simulates realistic LangGraph RAG responses if local FastAPI backend is offline.
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setIsDemoMode(!isDemoMode)}
-                className={`w-12 h-6 rounded-full transition-colors relative p-0.5 ${
-                  isDemoMode ? 'bg-purple-600' : 'bg-slate-800'
-                }`}
-              >
-                <div
-                  className={`w-5 h-5 rounded-full bg-white transition-transform ${
-                    isDemoMode ? 'translate-x-6' : 'translate-x-0'
-                  }`}
-                />
-              </button>
-            </div>
-          </div>
+          {/* Mode Switcher removed */}
 
           <div className="p-3 bg-slate-950/60 rounded-xl border border-slate-800 text-[11px] text-slate-400 space-y-1">
             <p className="font-bold text-slate-300">Registered Backend Endpoints:</p>

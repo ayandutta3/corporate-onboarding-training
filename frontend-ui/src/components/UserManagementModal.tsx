@@ -18,7 +18,6 @@ interface UserManagementModalProps {
   isOpen: boolean;
   onClose: () => void;
   backendUrl: string;
-  isDemoMode: boolean;
 }
 
 export const UserManagementModal: React.FC<UserManagementModalProps> = ({
@@ -26,7 +25,6 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({
   isOpen,
   onClose,
   backendUrl,
-  isDemoMode,
 }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -56,8 +54,7 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({
             businessLine: isCorporate ? undefined : businessLine
         },
         currentUser.token || 'admin-token',
-        backendUrl,
-        isDemoMode
+        backendUrl
       );
       setFeedback(res);
       if (res.success) {
