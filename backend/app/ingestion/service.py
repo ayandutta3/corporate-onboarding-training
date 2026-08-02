@@ -48,8 +48,10 @@ class IngestionService:
         if description:
             extracted_text = f"Title: {title or file.filename}\nDescription: {description}\n\n{extracted_text}"
             
-        # 3. AI Summary & Tags
-        summary, tags = await generate_ai_summary_and_tags(extracted_text)
+        # 3. AI Summary & Tags (Only for Hybrid Pipeline)
+        summary, tags = None, []
+        if pipeline_type == "hybrid":
+            summary, tags = await generate_ai_summary_and_tags(extracted_text)
         
         # 4. Create Document Model
         doc = DocumentModel(

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { AuthUser, Citation, SearchFilters, SearchResponse, SearchMode } from '../types';
 import { SUGGESTED_QUERIES } from '../data/mockData';
 import { searchRAG } from '../services/api';
+import { DocumentPreviewModal } from './DocumentPreviewModal';
 import {
   Search,
   Sparkles,
@@ -58,6 +59,7 @@ export const SearchDashboard: React.FC<SearchDashboardProps> = ({
   const [copiedAnswer, setCopiedAnswer] = useState(false);
   const [feedbackGiven, setFeedbackGiven] = useState<'up' | 'down' | null>(null);
   const [showRawJson, setShowRawJson] = useState(false);
+  const [previewDoc, setPreviewDoc] = useState<{id: string, name: string} | null>(null);
 
   const handleSearch = async (overrideQuery?: string) => {
     const searchQuery = overrideQuery || query;
@@ -484,18 +486,30 @@ export const SearchDashboard: React.FC<SearchDashboardProps> = ({
               {expandedCitations && (
                 <div className="flex flex-wrap gap-3 pt-1">
                   {activeResponse.citations.map((cit) => (
-                    <div
+                    <button
                       key={cit.id}
-                      className="px-3.5 py-2.5 bg-white/5 border border-white/10 rounded-xl flex items-center gap-3 cursor-pointer hover:bg-white/10 transition-colors"
+                      onClick={() => {
+                        if (cit.document_id) {
+                          setPreviewDoc({ id: cit.document_id, name: cit.source });
+                        } else {
+                          // Fallback if document_id is missing for some reason
+                          alert('Document ID is missing for this citation. Cannot preview.');
+                        }
+                      }}
+                      className="px-3.5 py-2.5 bg-white/5 border border-white/10 rounded-xl flex items-center gap-3 cursor-pointer hover:bg-white/10 hover:border-indigo-500/30 transition-all group text-left"
+                      title="Click to preview original document"
                     >
-                      <div className="w-7 h-7 rounded bg-slate-800 flex items-center justify-center text-[10px] font-mono text-indigo-300 font-bold">
-                        {cit.source.endsWith('.pdf') ? 'PDF' : 'MD'}
+                      <div className="w-7 h-7 rounded bg-slate-800 flex items-center justify-center text-[10px] font-mono text-indigo-300 font-bold group-hover:bg-indigo-500/20 group-hover:text-indigo-200 transition-colors">
+                        {cit.source.endsWith('.pdf') ? 'PDF' : cit.source.endsWith('.mp3') || cit.source.endsWith('.wav') ? 'AUD' : 'DOC'}
                       </div>
                       <div>
-                        <p className="text-[11px] text-slate-300 font-medium">{cit.title}</p>
-                        <p className="text-[10px] text-slate-500 font-mono">{cit.source} • {(cit.score * 100).toFixed(0)}% match</p>
+                        <p className="text-[11px] text-slate-300 font-medium group-hover:text-white transition-colors">{cit.title}</p>
+                        <p className="text-[10px] text-slate-500 font-mono flex items-center gap-1">
+                          {cit.source} • {(cit.score * 100).toFixed(0)}% match
+                          <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity text-indigo-400 ml-1" />
+                        </p>
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
               )}
@@ -510,6 +524,15 @@ export const SearchDashboard: React.FC<SearchDashboardProps> = ({
           </div>
         </div>
       )}
+      
+      <DocumentPreviewModal 
+        isOpen={previewDoc !== null}
+        onClose={() => setPreviewDoc(null)}
+        documentId={previewDoc?.id || ''}
+        filename={previewDoc?.name || ''}
+        backendUrl={backendUrl}
+        user={user}
+      />
     </div>
   );
 };

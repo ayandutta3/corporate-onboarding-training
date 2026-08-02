@@ -20,6 +20,7 @@ export interface SearchFilters {
 
 export interface Citation {
   id: string;
+  document_id?: string;
   title: string;
   source: string;
   department: string;

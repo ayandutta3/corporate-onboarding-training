@@ -164,9 +164,11 @@ async def prompt_builder(state: GraphState) -> GraphState:
         context_text += f"\n--- Source {i+1} ---\n{doc}\n"
         
         doc_name = meta.get("document_name", "Unknown")
+        doc_id = meta.get("document_id")
         if doc_name not in seen_documents:
             seen_documents.add(doc_name)
             citations.append(Citation(
+                document_id=doc_id,
                 document_name=doc_name,
                 version=meta.get("version"),
                 page_number=meta.get("page_number"),

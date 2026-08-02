@@ -6,6 +6,7 @@ class SearchRequest(BaseModel):
     top_k: int = 5
 
 class Citation(BaseModel):
+    document_id: Optional[str] = None
     document_name: str
     version: Optional[int] = None
     page_number: Optional[int] = None

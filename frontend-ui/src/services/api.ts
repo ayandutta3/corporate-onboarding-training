@@ -191,6 +191,7 @@ export async function searchRAG(
     answer: data.answer || 'No answer provided.',
     citations: (data.citations || []).map((c: any, i: number) => ({
       id: `cit-${i}`,
+      document_id: c.document_id,
       title: c.section || c.document_name || 'Document Reference',
       source: c.document_name || 'Unknown',
       department: 'Corporate',
