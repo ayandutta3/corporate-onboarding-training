@@ -1,6 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { AuthUser, IngestionMode, UploadedDoc } from '../types';
-import { getActiveDocuments, uploadDocument, analyzeDocument } from '../services/api';
+import { getActiveDocuments, uploadDocument, analyzeDocument, fetchDocuments } from '../services/api';
 import {
   UploadCloud,
   FileText,
@@ -45,10 +45,20 @@ export const UploadPortal: React.FC<UploadPortalProps> = ({
     }
   };
 
+  const formatRoleToDepartment = (role: string) => {
+    if (!role) return 'General User';
+    if (role === 'hr') return 'HR';
+    if (role === 'admin') return 'Admin / Corporate';
+    if (role === 'finance_manager') return 'Finance';
+    if (role === 'technical_manager') return 'Engineering / IT';
+    return role.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  };
+
   // CRITICAL REQUIRED UI TOGGLE SWITCH: Vector Ingestion vs Hybrid Ingestion
   const [ingestionMode, setIngestionMode] = useState<IngestionMode>('hybrid');
   const [selectedDivision, setSelectedDivision] = useState(user.division || 'Corporate');
   const [selectedBusinessLine, setSelectedBusinessLine] = useState(user.businessLine || '');
+  const [department, setDepartment] = useState(formatRoleToDepartment(user.role));
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [docTitle, setDocTitle] = useState('');
@@ -61,6 +71,40 @@ export const UploadPortal: React.FC<UploadPortalProps> = ({
 
   const [docList, setDocList] = useState<UploadedDoc[]>(getActiveDocuments());
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const loadDocuments = async () => {
+    try {
+      const result = await fetchDocuments(user.token || '', backendUrl);
+      if (result && result.items && result.items.length > 0) {
+        const fetchedDocs: UploadedDoc[] = result.items.map((item: any) => ({
+          id: item.id || item._id,
+          fileName: item.filename || item.title || 'Untitled',
+          fileSize: item.file_size || 1024,
+          fileType: item.file_type || 'txt',
+          mode: (item.pipeline_type || 'hybrid') as IngestionMode,
+          department: item.department || item.businessLine || formatRoleToDepartment(user.role),
+          division: item.division || 'Corporate',
+          businessLine: item.businessLine || '',
+          uploadedBy: item.uploaded_by || 'User',
+          timestamp: item.created_at ? new Date(item.created_at).toLocaleString() : new Date().toLocaleString(),
+          chunksCount: item.chunks_count || (item.pipeline_type === 'vector' ? 5 : 0),
+          status: 'completed',
+          vectorId: item.id || `chroma-${item.filename}`,
+          embeddingModel: 'azure/genailab-maas-text-embedding-3-large',
+        }));
+        setDocList(fetchedDocs);
+      } else {
+        setDocList(getActiveDocuments());
+      }
+    } catch (err) {
+      console.warn('Failed to fetch documents from backend, using activeDocs fallback:', err);
+      setDocList(getActiveDocuments());
+    }
+  };
+
+  useEffect(() => {
+    loadDocuments();
+  }, [user.token, backendUrl]);
 
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showAnalysisModal, setShowAnalysisModal] = useState(false);
@@ -84,19 +128,19 @@ export const UploadPortal: React.FC<UploadPortalProps> = ({
     if (!selectedFile) return;
 
     setIsUploading(true);
-    setUploadProgress(10);
+    setUploadProgress(15);
 
     const interval = setInterval(() => {
       setUploadProgress((prev) => {
         if (prev >= 90) {
-          clearInterval(interval);
           return 90;
         }
-        return prev + 20;
+        return prev + 15;
       });
-    }, 200);
+    }, 250);
 
     try {
+      const uploadDept = selectedBusinessLine || department;
       const doc = await uploadDocument(
         selectedFile,
         ingestionMode,
@@ -109,13 +153,14 @@ export const UploadPortal: React.FC<UploadPortalProps> = ({
         customTags,
         autofillTags,
         overrideSummary,
-        overrideTags
+        overrideTags,
+        uploadDept
       );
 
       clearInterval(interval);
       setUploadProgress(100);
       setLastUploadedDoc(doc);
-      setDocList(getActiveDocuments());
+      await loadDocuments();
       setSelectedFile(null);
       setDocTitle('');
       setDocDescription('');
@@ -126,11 +171,13 @@ export const UploadPortal: React.FC<UploadPortalProps> = ({
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
-    } catch (err) {
+    } catch (err: any) {
+      clearInterval(interval);
       console.error('Error during document ingestion:', err);
-      alert('Upload failed. Please check backend server status or file format.');
+      alert(`Ingestion Error: ${err?.message || 'Upload failed. Please check backend server status or file format.'}`);
     } finally {
       setIsUploading(false);
+      setTimeout(() => setUploadProgress(0), 1200);
     }
   };
 
@@ -283,6 +330,43 @@ export const UploadPortal: React.FC<UploadPortalProps> = ({
                 </div>
               </div>
             )}
+
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5 flex items-center gap-1">
+                <Building2 className="w-3.5 h-3.5 text-purple-400" /> Department {user.role === 'admin' ? '(Admin Selector)' : '(Locked from Role)'}
+              </label>
+              {user.role === 'admin' ? (
+                <div className="flex items-center gap-2">
+                  <select
+                    value={department}
+                    onChange={(e) => setDepartment(e.target.value)}
+                    className="w-full px-3 py-2 bg-purple-500/10 border border-purple-500/30 rounded-xl text-xs text-purple-300 font-mono focus:outline-none focus:border-purple-400 font-semibold"
+                  >
+                    <option value="HR" className="bg-[#0e1117]">HR</option>
+                    <option value="Engineering / IT" className="bg-[#0e1117]">Engineering / IT</option>
+                    <option value="Finance" className="bg-[#0e1117]">Finance</option>
+                    <option value="Admin / Corporate" className="bg-[#0e1117]">Admin / Corporate</option>
+                    <option value="Management" className="bg-[#0e1117]">Management</option>
+                    <option value="Operations" className="bg-[#0e1117]">Operations</option>
+                  </select>
+                  <span className="px-2.5 py-1 rounded-lg text-[10px] font-mono bg-purple-500/20 text-purple-300 border border-purple-500/30 shrink-0 uppercase font-bold">
+                    ADMIN OVERRIDE
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={department}
+                    disabled
+                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-xs text-slate-400 font-mono cursor-not-allowed opacity-70"
+                  />
+                  <span className="px-2.5 py-1 rounded-lg text-[10px] font-mono bg-white/5 text-slate-400 border border-white/10 shrink-0 uppercase font-bold flex items-center gap-1">
+                    <Lock className="w-3 h-3 text-slate-500" /> LOCKED ({user.role.toUpperCase()})
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Title, Description, and Custom Tags metadata form */}
@@ -370,7 +454,7 @@ export const UploadPortal: React.FC<UploadPortalProps> = ({
               type="file"
               ref={fileInputRef}
               onChange={handleFileSelect}
-              accept=".pdf,.docx,.txt,.md,.csv,.mp3,.wav,.m4a,.flac,.ogg,.aac"
+              accept="*/*"
               className="hidden"
             />
 
@@ -447,7 +531,9 @@ export const UploadPortal: React.FC<UploadPortalProps> = ({
                 Document Ingested: {lastUploadedDoc.fileName}
               </p>
               <p className="text-slate-300 font-mono">
-                Created {lastUploadedDoc.chunksCount} chunks tagged for '{lastUploadedDoc.division}' using endpoint '{lastUploadedDoc.mode === 'hybrid' ? '/upload/hybrid' : '/upload/vector'}'. Vector ID: {lastUploadedDoc.vectorId}.
+                {lastUploadedDoc.mode === 'hybrid'
+                  ? `Raw text & metadata registered for '${lastUploadedDoc.division}' via '/upload/hybrid'. Lazy Embedding active (0 vector chunks created until query time). Document ID: ${lastUploadedDoc.id}.`
+                  : `Created ${lastUploadedDoc.chunksCount} vector chunks for '${lastUploadedDoc.division}' via '/upload/vector'. Vector ID: ${lastUploadedDoc.vectorId}.`}
               </p>
             </div>
           </div>
@@ -500,7 +586,9 @@ export const UploadPortal: React.FC<UploadPortalProps> = ({
                       {doc.mode.toUpperCase()}
                     </span>
                   </td>
-                  <td className="py-3 px-4 text-slate-300">{doc.chunksCount} chunks</td>
+                  <td className="py-3 px-4 text-slate-300">
+                    {doc.mode === 'hybrid' && doc.chunksCount === 0 ? '0 (Lazy Embedded)' : `${doc.chunksCount} chunks`}
+                  </td>
                   <td className="py-3 px-4 text-slate-400">{doc.uploadedBy}</td>
                   <td className="py-3 px-4 text-slate-500">{doc.timestamp}</td>
                 </tr>

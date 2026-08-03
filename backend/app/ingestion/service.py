@@ -31,10 +31,15 @@ class IngestionService:
 
     async def process_upload(self, file: UploadFile, user: UserInDB, pipeline_type: str, title: str = None, description: str = None, version: int = 1, requested_department: str = None, requested_division: str = None, requested_businessLine: str = None, user_tags_str: str = None, autofill_tags: bool = True, override_summary: str = None, override_tags: list[str] = None):
         department = self._determine_metadata_from_role(user.role)
-        
         division = user.division or "Corporate"
         businessLine = user.businessLine
         
+        if requested_businessLine:
+            businessLine = requested_businessLine
+            department = requested_businessLine
+        elif requested_department:
+            department = requested_department
+
         if user.role == Role.ADMIN:
             if requested_department:
                 department = requested_department
@@ -42,7 +47,8 @@ class IngestionService:
                 division = requested_division
             if requested_businessLine:
                 businessLine = requested_businessLine
-                
+                department = requested_businessLine
+
         if division == "Corporate":
             businessLine = None
         

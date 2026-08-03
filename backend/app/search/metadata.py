@@ -30,12 +30,13 @@ class MetadataSearchService:
             
         if not is_admin:
             # RBAC for Division / BusinessLine
-            division_or_clauses = [{"division": "Corporate"}]
-            if user_division == "BusinessLine" and user_businessLine:
-                division_or_clauses.append({
-                    "division": "BusinessLine",
-                    "businessLine": user_businessLine
-                })
+            division_or_clauses = [
+                {"division": "Corporate"},
+                {"division": "BusinessLine"}
+            ]
+            if user_businessLine:
+                division_or_clauses.append({"businessLine": user_businessLine})
+                division_or_clauses.append({"department": user_businessLine})
             
             if "$or" in query:
                 # Need an $and to combine the role $or and division $or

@@ -1,3 +1,4 @@
+import app.configuration.ssl_patch
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from app.configuration.settings import get_settings

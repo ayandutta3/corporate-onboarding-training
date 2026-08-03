@@ -1,0 +1,22 @@
+================================================================================
+TCS CORPORATE POLICY 2026: WORK FROM HOME (WFH) AND REMOTE ONBOARDING GUIDELINES
+================================================================================
+
+1. ELIGIBILITY AND PERMISSION SCOPE
+- All full-time employee roles across HR, Engineering, Finance, and Corporate operations are eligible for 2 days per week Remote / Work From Home (WFH).
+- Employees must maintain a minimum 80% quarterly office attendance baseline for the remaining 3 days.
+
+2. MANDATORY APPROVAL STEPS
+- Step 1: Submit a WFH request via the Corporate Employee Portal 48 hours prior to the requested remote date.
+- Step 2: Line Manager or Department VP must approve the ticket digitally.
+- Step 3: Automated IT Security check verifies encrypted VPN registration on the employee laptop.
+
+3. CORE WORKING HOURS AND COMPLIANCE
+- Mandatory Core Availability Window: 10:00 AM to 4:00 PM EST across all remote work days.
+- Total required daily working hours: 8 hours per day.
+- Unscheduled offline status exceeding 45 minutes during core hours requires prior notification to the team lead.
+
+4. IT AND DATA SECURITY COMPLIANCE
+- Remote work is permitted ONLY on company-issued laptops with active BitLocker drive encryption and GlobalProtect VPN.
+- Public Wi-Fi without VPN encryption is strictly prohibited.
+- Sharing confidential onboarding or project documentation on personal cloud storage is a zero-tolerance compliance violation.

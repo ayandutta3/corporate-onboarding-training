@@ -46,6 +46,8 @@ class LazyEmbeddingService:
                         "chunk_id": chunk_id,
                         "document_name": doc.filename,
                         "department": doc.department,
+                        "division": doc.division or "Corporate",
+                        "businessLine": doc.businessLine or "",
                         "timestamp": str(doc.created_at),
                         "version": doc.version
                     })

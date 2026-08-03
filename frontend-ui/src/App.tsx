@@ -10,10 +10,12 @@ import { PolicyHub } from './components/PolicyHub';
 import { UserAdminPage } from './components/UserAdminPage';
 import { SettingsModal } from './components/SettingsModal';
 import { RagasReportView } from './components/RagasReportView';
+import { PromptComparisonView } from './components/PromptComparisonView';
+import { HighlightedFeatures } from './components/HighlightedFeatures';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
-  const [activeTab, setActiveTab] = useState<NavTab>('search');
+  const [activeTab, setActiveTab] = useState<NavTab>('highlighted_features');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
 
   const [backendUrl, setBackendUrl] = useState<string>(DEFAULT_BACKEND_URL);
@@ -72,11 +74,22 @@ export default function App() {
 
       {/* Main Tab Content Container (offset by sidebar width) */}
       <main className={`flex-1 transition-all duration-300 pb-16 ${isSidebarCollapsed ? 'pl-20' : 'pl-64'}`}>
+        {activeTab === 'highlighted_features' && (
+          <HighlightedFeatures setActiveTab={setActiveTab} />
+        )}
+
         {activeTab === 'search' && (
           <SearchDashboard
             user={currentUser}
             backendUrl={backendUrl}
             isDemoMode={isDemoMode}
+          />
+        )}
+
+        {activeTab === 'prompt_compare' && (
+          <PromptComparisonView
+            user={currentUser}
+            backendUrl={backendUrl}
           />
         )}
 

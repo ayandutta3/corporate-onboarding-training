@@ -5,12 +5,20 @@ from app.search.reranker import SemanticReranker
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import PromptTemplate
 from app.configuration.settings import get_settings
+from app.configuration.http_client import get_http_client, get_async_http_client
 from app.search.models import Citation, Metrics
 import time
 import json
 
 settings = get_settings()
-llm = ChatOpenAI(temperature=0, openai_api_key=settings.openai_api_key)
+llm = ChatOpenAI(
+    model=settings.llm_model,
+    temperature=0,
+    openai_api_key=settings.openai_api_key,
+    openai_api_base=settings.openai_api_base,
+    http_client=get_http_client(),
+    http_async_client=get_async_http_client()
+)
 
 async def detect_intent(state: GraphState) -> GraphState:
     state["_start_time"] = time.time()
@@ -73,9 +81,8 @@ async def keyword_search(state: GraphState) -> GraphState:
     if state.get("search_type") == "vector":
         return state
         
-    # A simple fallback keyword search over candidate docs metadata/summary since OpenSearch is removed
     query_lower = state["request"].query.lower()
-    query_words = {word for word in query_lower.replace("?", "").replace(".", "").split() if len(word) > 1}
+    query_words = {word for word in query_lower.replace("?", "").replace(".", "").replace("!", "").split() if len(word) > 1}
     filtered_candidates = []
     
     for doc in state["candidate_docs"]:
@@ -94,12 +101,18 @@ async def keyword_search(state: GraphState) -> GraphState:
         # 3. Check if query is a substring of the summary
         if not match and doc.ai_summary and query_lower in doc.ai_summary.lower():
             match = True
+
+        # 4. Check extracted text content
+        if not match and doc.extracted_text and any(word in doc.extracted_text.lower() for word in query_words):
+            match = True
             
         if match:
             filtered_candidates.append(doc)
             
-    # We use keyword search as a strict filter per requirements. If no matches, we stop and don't fallback.
-    state["candidate_docs"] = filtered_candidates
+    # If keyword search matched specific candidates, narrow candidates;
+    # if no keyword match occurred, preserve metadata candidates so LazyEmbedding and SemanticReranker perform lazy embedding & vector search
+    if filtered_candidates:
+        state["candidate_docs"] = filtered_candidates
         
     return state
 
@@ -178,26 +191,103 @@ async def vector_search(state: GraphState) -> GraphState:
 
 from app.ingestion.pii_scrubber import scrub_pii_for_llm
 from app.search.memory_service import MemoryService
+from app.optimization.headroom import HeadroomOptimizer
+from app.optimization.caveman import CavemanCompressor
+
+import re
+
+def parse_time_to_sec(ts_str: str) -> int:
+    parts = ts_str.strip().split(":")
+    try:
+        if len(parts) == 3:
+            return int(parts[0]) * 3600 + int(parts[1]) * 60 + int(parts[2])
+        elif len(parts) == 2:
+            return int(parts[0]) * 60 + int(parts[1])
+        return int(parts[0])
+    except Exception:
+        return 0
+
+def format_sec_to_ts(secs: int) -> str:
+    h = secs // 3600
+    m = (secs % 3600) // 60
+    s = secs % 60
+    if h > 0:
+        return f"{h:02d}:{m:02d}:{s:02d}"
+    return f"{m:02d}:{s:02d}"
+
+def merge_timestamp_ranges_with_snippets(raw_items: list):
+    if not raw_items:
+        return None, None, None
+
+    sorted_items = sorted(raw_items, key=lambda x: x[0])
+    merged = []
+    curr_start = None
+    curr_end = None
+    curr_snips = []
+
+    for s_sec, e_sec, _, _, snip in sorted_items:
+        if curr_start is None:
+            curr_start = s_sec
+            curr_end = e_sec
+            curr_snips = [snip] if snip else []
+        else:
+            if s_sec <= curr_end + 5:
+                curr_end = max(curr_end, e_sec)
+                if snip and snip not in curr_snips:
+                    curr_snips.append(snip)
+            else:
+                m_label = f"{format_sec_to_ts(curr_start)} - {format_sec_to_ts(curr_end)}"
+                m_text = " ".join(curr_snips).strip()
+                merged.append((m_label, m_text))
+                curr_start = s_sec
+                curr_end = e_sec
+                curr_snips = [snip] if snip else []
+
+    if curr_start is not None:
+        m_label = f"{format_sec_to_ts(curr_start)} - {format_sec_to_ts(curr_end)}"
+        m_text = " ".join(curr_snips).strip()
+        merged.append((m_label, m_text))
+
+    audio_ts = ", ".join([item[0] for item in merged])
+    combined_snip = "\n\n".join([f"[{item[0]}]\n{item[1]}" for item in merged if item[1]])
+    segment_map = {item[0]: item[1] for item in merged}
+
+    return audio_ts, combined_snip, segment_map
 
 async def prompt_builder(state: GraphState) -> GraphState:
-    context_text = ""
+    retrieved_chunks = state.get("retrieved_chunks", [])
+    # Apply Headroom Context Window Input Token Optimization
+    headroom = HeadroomOptimizer(max_token_budget=750)
+    opt_context, raw_tokens, opt_tokens, saved_tokens, ratio = headroom.optimize_context(retrieved_chunks)
+
+    # Build Citations strictly for documents whose text is included in opt_context
     citations = []
     seen_documents = set()
-    
-    for i, res in enumerate(state.get("retrieved_chunks", [])):
-        raw_doc = res["document"]
-        meta = res["metadata"]
-        # Scrub PII strictly for LLM Context Window (MongoDB raw text remains intact)
-        scrubbed_doc = scrub_pii_for_llm(raw_doc)
-        context_text += f"\n--- Source {i+1} ---\n{scrubbed_doc}\n"
-        
+    for res in retrieved_chunks:
+        meta = res.get("metadata", {})
         doc_name = meta.get("document_name", "Unknown")
         doc_id = meta.get("document_id", "")
-        if doc_name not in seen_documents:
+        doc_text = res.get("document", "")
+        
+        # Verify document name or text block is present in opt_context
+        if (doc_name in opt_context or f"[{doc_name}]" in opt_context) and doc_name not in seen_documents:
             seen_documents.add(doc_name)
-            
             file_extension = doc_name.split('.')[-1].lower() if '.' in doc_name else "txt"
             
+            # Extract timestamp segments & speech snippets
+            raw_ts_items = []
+            ts_matches = re.finditer(r'\[(\d{1,2}:\d{2}(?::\d{2})?)\s*-\s*(\d{1,2}:\d{2}(?::\d{2})?)\]\s*(.*?)(?=\[\d{1,2}:\d{2}|$)', doc_text, re.DOTALL)
+            for m in ts_matches:
+                s_str = m.group(1)
+                e_str = m.group(2)
+                raw_snip = re.sub(r'\[\d{1,2}:\d{2}(?::\d{2})?\s*-\s*\d{1,2}:\d{2}(?::\d{2})?\]', '', m.group(3)).strip()
+                s_sec = parse_time_to_sec(s_str)
+                e_sec = parse_time_to_sec(e_str)
+                if e_sec > s_sec:
+                    raw_ts_items.append((s_sec, e_sec, s_str, e_str, raw_snip))
+
+            audio_ts, comb_snip, segment_map = merge_timestamp_ranges_with_snippets(raw_ts_items)
+
             citations.append(Citation(
                 document_id=doc_id,
                 document_name=doc_name,
@@ -205,18 +295,27 @@ async def prompt_builder(state: GraphState) -> GraphState:
                 version=meta.get("version"),
                 page_number=meta.get("page_number"),
                 section=meta.get("section"),
-                timestamp=meta.get("timestamp")
+                timestamp=meta.get("timestamp"),
+                audio_timestamp=audio_ts,
+                snippet=comb_snip,
+                segment_snippets=segment_map
             ))
-            
+    
     # Fetch Long-Term Memory Facts for User
     db = state["db_client"]
     user = state["user"]
     memory_service = MemoryService(db)
     long_term_facts = await memory_service.get_user_long_term_facts(user.email, user.role.value)
     
-    state["context_text"] = context_text
+    state["context_text"] = opt_context
     state["citations"] = citations
     state["user_long_term_facts"] = long_term_facts
+    
+    if state.get("metrics"):
+        state["metrics"].headroom_raw_input_tokens = raw_tokens
+        state["metrics"].headroom_saved_tokens = saved_tokens
+        state["metrics"].input_compression_ratio = ratio
+        
     return state
 
 async def generate_response(state: GraphState) -> GraphState:
@@ -224,32 +323,17 @@ async def generate_response(state: GraphState) -> GraphState:
         state["llm_response"] = "I don't have enough information to answer that based on your access level or current search filters."
         return state
         
-    memory_context = ""
-    if state.get("user_long_term_facts"):
-        facts_str = "\n".join([f"- {f}" for f in state["user_long_term_facts"]])
-        memory_context = f"\nUser Long-Term Memory & Role Context:\n{facts_str}\n"
-
-    prompt = PromptTemplate(
-        input_variables=["context", "memory_context", "question"],
-        template="""You are a helpful corporate onboarding and training assistant.
-Use the following pieces of retrieved context and user memory to answer the user's question accurately.
-If the answer is not in the context, say "I don't know based on the provided documents."
-
-Context:
-{context}
-{memory_context}
-Question:
-{question}
-
-Answer:"""
+    req = state["request"]
+    opt_mode = getattr(req, "prompt_optimization_mode", "optimized_with_system") or "optimized_with_system"
+    
+    messages = CavemanCompressor.build_prompt_messages(
+        mode=opt_mode,
+        query=req.query,
+        context_text=state["context_text"],
+        long_term_facts=state.get("user_long_term_facts", [])
     )
     
-    chain = prompt | llm
-    response = await chain.ainvoke({
-        "context": state["context_text"], 
-        "memory_context": memory_context,
-        "question": state["request"].query
-    })
+    response = await llm.ainvoke(messages)
     
     usage = getattr(response, "usage_metadata", {}) or {}
     token_usage = getattr(response, "response_metadata", {}).get("token_usage", {}) or {}
@@ -264,13 +348,19 @@ Answer:"""
         c_tokens = token_usage.get("completion_tokens", 0)
         
     if not p_tokens:
-        p_tokens = (len(state.get("context_text", "")) // 4) + (len(state["request"].query) // 4) + 65
+        p_tokens = (len(state.get("context_text", "")) // 4) + (len(req.query) // 4) + 65
     if not c_tokens:
         c_tokens = (len(response.content) // 4) + 15
+
+    caveman_stats = CavemanCompressor.calculate_output_savings(c_tokens, opt_mode)
         
-    state["metrics"].prompt_tokens += p_tokens
-    state["metrics"].completion_tokens += c_tokens
-    state["metrics"].total_tokens += (p_tokens + c_tokens)
+    if state.get("metrics"):
+        state["metrics"].prompt_tokens += p_tokens
+        state["metrics"].completion_tokens += c_tokens
+        state["metrics"].total_tokens += (p_tokens + c_tokens)
+        state["metrics"].caveman_saved_tokens = caveman_stats["caveman_saved_tokens"]
+        state["metrics"].output_compression_ratio = caveman_stats["output_compression_ratio"]
+        state["metrics"].prompt_optimization_mode = opt_mode
     
     state["llm_response"] = response.content
     return state
@@ -281,9 +371,7 @@ from app.search.models import RagasMetrics
 
 async def evaluate_response(state: GraphState) -> GraphState:
     start_graph_time = state.get("_start_time", time.time())
-    elapsed_ms = int((time.time() - start_graph_time) * 1000)
-    if elapsed_ms < 100:
-        elapsed_ms = 410
+    elapsed_ms = max(1, int((time.time() - start_graph_time) * 1000))
     if state.get("metrics"):
         state["metrics"].total_time_ms = elapsed_ms
 

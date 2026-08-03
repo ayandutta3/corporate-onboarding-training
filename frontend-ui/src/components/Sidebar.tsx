@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import { AuthUser, UserRole } from '../types';
 import {
+  Tv,
+  LayoutDashboard,
   Search,
+  MessageSquare,
+  SlidersHorizontal,
   UploadCloud,
   Activity,
   Users,
@@ -16,7 +20,7 @@ import {
   Lock
 } from 'lucide-react';
 
-export type NavTab = 'search' | 'upload' | 'monitoring' | 'policy' | 'users' | 'ragas_report';
+export type NavTab = 'highlighted_features' | 'search' | 'prompt_compare' | 'upload' | 'monitoring' | 'policy' | 'users' | 'ragas_report';
 
 interface SidebarProps {
   user: AuthUser;
@@ -145,16 +149,41 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Navigation Item Links */}
         <nav className="space-y-1.5 pt-2">
           <button
+            onClick={() => setActiveTab('highlighted_features')}
+            className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold tracking-wide transition-all border ${
+              activeTab === 'highlighted_features'
+                ? 'bg-gradient-to-r from-indigo-500/20 via-purple-500/20 to-pink-500/20 text-white border-indigo-500/60 shadow-xl shadow-indigo-500/20'
+                : 'text-slate-300 hover:text-white bg-white/5 border-white/10 hover:border-indigo-500/40'
+            }`}
+            title="Overview & Presenter Deck"
+          >
+            <Tv className="w-4 h-4 shrink-0 text-indigo-400" />
+            {!isCollapsed && <span>Overview</span>}
+          </button>
+          <button
             onClick={() => setActiveTab('search')}
             className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-semibold tracking-wide transition-all ${
               activeTab === 'search'
                 ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 shadow-lg shadow-indigo-500/10'
                 : 'text-slate-400 hover:text-white hover:bg-white/5'
             }`}
-            title="Semantic Search"
+            title="Knowledgebase Chatbot"
           >
-            <Search className="w-4 h-4 shrink-0 text-indigo-400" />
-            {!isCollapsed && <span>Semantic Search</span>}
+            <MessageSquare className="w-4 h-4 shrink-0 text-indigo-400" />
+            {!isCollapsed && <span>Knowledgebase Chatbot</span>}
+          </button>
+
+          <button
+            onClick={() => setActiveTab('prompt_compare')}
+            className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-semibold tracking-wide transition-all ${
+              activeTab === 'prompt_compare'
+                ? 'bg-pink-500/20 text-pink-300 border border-pink-500/40 shadow-lg shadow-pink-500/10'
+                : 'text-slate-400 hover:text-white hover:bg-white/5'
+            }`}
+            title="Prompt Comparison"
+          >
+            <SlidersHorizontal className="w-4 h-4 shrink-0 text-pink-400" />
+            {!isCollapsed && <span>Prompt Comparison</span>}
           </button>
 
           <button

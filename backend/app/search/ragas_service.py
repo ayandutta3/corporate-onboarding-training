@@ -4,6 +4,7 @@ import math
 from typing import List
 from app.search.models import RagasMetrics
 from app.configuration.settings import get_settings
+from app.configuration.http_client import get_http_client, get_async_http_client
 from langchain_openai import ChatOpenAI
 from app.vector.embedding import EmbeddingService
 
@@ -12,7 +13,14 @@ settings = get_settings()
 
 class RagasEvaluatorService:
     def __init__(self):
-        self.llm = ChatOpenAI(temperature=0, openai_api_key=settings.openai_api_key)
+        self.llm = ChatOpenAI(
+            model=settings.llm_model,
+            temperature=0,
+            openai_api_key=settings.openai_api_key,
+            openai_api_base=settings.openai_api_base,
+            http_client=get_http_client(),
+            http_async_client=get_async_http_client()
+        )
         self.embedding_service = EmbeddingService()
 
     @staticmethod

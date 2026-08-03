@@ -1,9 +1,12 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 class SearchRequest(BaseModel):
     query: str
     top_k: int = 5
+    prompt_optimization_mode: Optional[str] = "optimized_with_system" # base, optimized_no_system, optimized_with_system
+    enable_headroom: Optional[bool] = True
+    enable_caveman: Optional[bool] = True
 
 class Citation(BaseModel):
     document_id: str = ""
@@ -13,6 +16,9 @@ class Citation(BaseModel):
     page_number: Optional[int] = None
     section: Optional[str] = None
     timestamp: Optional[str] = None
+    audio_timestamp: Optional[str] = None
+    snippet: Optional[str] = None
+    segment_snippets: Optional[Dict[str, str]] = None
 
 class HybridSearchRequest(BaseModel):
     query: str
@@ -23,6 +29,9 @@ class HybridSearchRequest(BaseModel):
     access_roles: Optional[str] = None
     status: Optional[str] = None
     version: Optional[int] = None
+    prompt_optimization_mode: Optional[str] = "optimized_with_system" # base, optimized_no_system, optimized_with_system
+    enable_headroom: Optional[bool] = True
+    enable_caveman: Optional[bool] = True
 
 class RagasMetrics(BaseModel):
     faithfulness: float
@@ -42,6 +51,14 @@ class Metrics(BaseModel):
     ragas_metrics: Optional[RagasMetrics] = None
     semantic_cache_hit: Optional[bool] = False
     cache_similarity: Optional[float] = 0.0
+    
+    # Headroom & Caveman Optimization Metrics
+    headroom_raw_input_tokens: Optional[int] = 0
+    headroom_saved_tokens: Optional[int] = 0
+    input_compression_ratio: Optional[float] = 0.0
+    caveman_saved_tokens: Optional[int] = 0
+    output_compression_ratio: Optional[float] = 0.0
+    prompt_optimization_mode: Optional[str] = "optimized_with_system"
 
 class SearchResponse(BaseModel):
     answer: str

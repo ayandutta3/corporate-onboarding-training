@@ -116,14 +116,15 @@ export async function uploadDocument(
   mode: 'vector' | 'hybrid',
   division?: string,
   businessLine?: string,
-  token: string,
+  token?: string,
   backendUrl: string = DEFAULT_BACKEND_URL,
   title?: string,
   description?: string,
   tags?: string,
   autofillTags: boolean = true,
   overrideSummary?: string,
-  overrideTags?: string
+  overrideTags?: string,
+  department?: string
 ): Promise<UploadedDoc> {
   const endpoint = mode === 'hybrid' ? '/upload/hybrid' : '/upload/vector';
   
@@ -131,6 +132,7 @@ export async function uploadDocument(
   formData.append('file', file);
   if (division) formData.append('division', division);
   if (businessLine) formData.append('businessLine', businessLine);
+  if (department) formData.append('department', department);
   if (title) formData.append('title', title);
   if (description) formData.append('description', description);
   if (tags) formData.append('tags', tags);
@@ -141,31 +143,35 @@ export async function uploadDocument(
   const res = await fetch(`${backendUrl}${endpoint}`, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${token || ''}`,
     },
     body: formData,
   });
 
-
   if (!res.ok) {
-    throw new Error('Upload failed.');
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.detail || errorData.message || `Upload failed with HTTP status ${res.status}`);
   }
 
   const data = await res.json();
   
+  const resolvedDept = department || (division === 'BusinessLine' ? businessLine : division) || 'Corporate';
+
   const doc: UploadedDoc = {
     id: data.document_id || `doc-${Date.now()}`,
     fileName: file.name,
     fileSize: file.size,
     fileType: file.type || 'application/octet-stream',
     mode,
-    department,
+    department: resolvedDept,
+    division: division || 'Corporate',
+    businessLine: businessLine || '',
     uploadedBy: 'Active User',
     timestamp: new Date().toLocaleString(),
-    chunksCount: Math.floor(file.size / 1500) + 1, // Synthesized
+    chunksCount: mode === 'hybrid' ? 0 : Math.floor(file.size / 1500) + 1,
     status: 'completed',
     vectorId: data.document_id || `chroma-${Date.now()}`,
-    embeddingModel: mode === 'hybrid' ? 'text-embedding-3-large' : 'text-embedding-3-small',
+    embeddingModel: mode === 'hybrid' ? 'azure/genailab-maas-text-embedding-3-large' : 'azure/genailab-maas-text-embedding-3-large',
   };
   
   activeDocs.unshift(doc);
@@ -237,6 +243,9 @@ export async function searchRAG(
       page_number: c.page_number,
       section: c.section,
       timestamp: c.timestamp,
+      audio_timestamp: c.audio_timestamp,
+      snippet: c.snippet,
+      segment_snippets: c.segment_snippets,
     })),
     metrics: data.metrics || {
       prompt_tokens: 0,
@@ -390,5 +399,44 @@ export async function rejectUser(
     body: JSON.stringify({ reason })
   });
   if (!res.ok) throw new Error('Failed to reject user');
+  return res.json();
+}
+
+export async function getUserMemoryHistory(
+  token: string,
+  backendUrl: string = DEFAULT_BACKEND_URL
+): Promise<{ user_email: string; turns: Array<{ query: string; answer: string; timestamp: string }>; long_term_facts: string[] }> {
+  const res = await fetch(`${backendUrl}/search/memory`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  if (!res.ok) return { user_email: '', turns: [], long_term_facts: [] };
+  return res.json();
+}
+
+export async function clearUserMemoryHistory(
+  token: string,
+  backendUrl: string = DEFAULT_BACKEND_URL
+): Promise<void> {
+  await fetch(`${backendUrl}/search/memory`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+}
+
+export async function comparePrompts(
+  query: string,
+  user: AuthUser,
+  backendUrl: string = DEFAULT_BACKEND_URL
+): Promise<Record<string, any>> {
+  const token = user.token || '';
+  const res = await fetch(`${backendUrl}/search/prompt-compare`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify({ query, top_k: 5 })
+  });
+  if (!res.ok) throw new Error('Failed to run prompt comparison');
   return res.json();
 }

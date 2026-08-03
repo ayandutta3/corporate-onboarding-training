@@ -35,16 +35,16 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         return db_obj
 
     async def update(self, id: Any, obj_in: UpdateSchemaType, **kwargs) -> Optional[ModelType]:
-        update_data = obj_in.model_dump(exclude_unset=True)
+        update_data = obj_in.model_dump(exclude_unset=True) if isinstance(obj_in, BaseModel) else dict(obj_in)
+        update_data.pop("_id", None)
+        update_data.pop("id", None)
         update_data.update(kwargs)
         update_data["updated_at"] = datetime.utcnow()
         
-        result = await self.collection.update_one(
+        await self.collection.update_one(
             {"_id": id}, {"$set": update_data}
         )
-        if result.modified_count == 1:
-            return await self.get(id)
-        return None
+        return await self.get(id)
 
     async def delete(self, id: Any) -> bool:
         result = await self.collection.delete_one({"_id": id})

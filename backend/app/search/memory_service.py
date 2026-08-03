@@ -5,6 +5,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import PromptTemplate
 from app.configuration.settings import get_settings
+from app.configuration.http_client import get_http_client, get_async_http_client
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
@@ -17,7 +18,14 @@ class MemoryService:
     def __init__(self, db: AsyncIOMotorDatabase):
         self.db = db
         self.collection = db["user_memories"]
-        self.llm = ChatOpenAI(temperature=0, openai_api_key=settings.openai_api_key)
+        self.llm = ChatOpenAI(
+            model=settings.llm_model,
+            temperature=0,
+            openai_api_key=settings.openai_api_key,
+            openai_api_base=settings.openai_api_base,
+            http_client=get_http_client(),
+            http_async_client=get_async_http_client()
+        )
 
     async def add_short_term_turn(self, user_email: str, role: str, query: str, answer: str):
         if user_email not in self._short_term_history:
@@ -29,13 +37,27 @@ class MemoryService:
             "timestamp": datetime.utcnow().isoformat()
         })
 
-        # Keep last 10 turns in short-term memory
-        if len(self._short_term_history[user_email]) > 10:
+        # Keep last 20 turns in short-term memory
+        if len(self._short_term_history[user_email]) > 20:
             self._short_term_history[user_email].pop(0)
 
         # Trigger Long-Term Memory Fact Extraction after every 2 turns
         if len(self._short_term_history[user_email]) % 2 == 0:
             await self.extract_and_persist_long_term_memory(user_email, role)
+
+    @classmethod
+    def get_short_term_turns(cls, user_email: str) -> List[Dict[str, Any]]:
+        return cls._short_term_history.get(user_email, [])
+
+    @classmethod
+    def clear_short_term_turns(cls, user_email: str):
+        if user_email in cls._short_term_history:
+            cls._short_term_history[user_email] = []
+        try:
+            from app.search.semantic_cache import SemanticCacheService
+            SemanticCacheService().clear_user_cache(user_email)
+        except Exception:
+            pass
 
     async def get_user_long_term_facts(self, user_email: str, role: str) -> List[str]:
         doc = await self.collection.find_one({"user_email": user_email})

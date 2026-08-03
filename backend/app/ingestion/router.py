@@ -9,7 +9,7 @@ import os
 
 router = APIRouter(prefix="/upload", tags=["Ingestion"])
 
-SUPPORTED_EXTENSIONS = ['pdf', 'docx', 'pptx', 'png', 'jpg', 'jpeg', 'mp4', 'avi', 'mp3', 'wav', 'm4a', 'flac', 'ogg', 'aac', 'txt']
+SUPPORTED_EXTENSIONS = ['pdf', 'docx', 'pptx', 'png', 'jpg', 'jpeg', 'mp4', 'avi', 'mov', 'm4v', 'mkv', 'mp3', 'wav', 'm4a', 'flac', 'ogg', 'aac', 'txt']
 AUDIO_EXTENSIONS = ['mp3', 'wav', 'm4a', 'flac', 'ogg', 'aac']
 MAX_AUDIO_SIZE_BYTES = 25 * 1024 * 1024 # 25MB
 

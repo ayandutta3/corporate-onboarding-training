@@ -42,6 +42,10 @@ export interface Citation {
   page_number?: number;
   section?: string;
   timestamp?: string;
+  chunkId?: string;
+  audio_timestamp?: string;
+  snippet?: string;
+  segment_snippets?: Record<string, string>;
 }
 
 export interface RagasMetrics {
@@ -54,12 +58,21 @@ export interface RagasMetrics {
 export interface Metrics {
   prompt_tokens: number;
   completion_tokens: number;
+  total_tokens?: number;
   embedding_time_ms: number;
   retrieval_time_ms: number;
   total_time_ms?: number;
   ragas_metrics?: RagasMetrics;
   semantic_cache_hit?: boolean;
   cache_similarity?: number;
+  
+  // Headroom & Caveman Token Optimization Fields
+  headroom_raw_input_tokens?: number;
+  headroom_saved_tokens?: number;
+  input_compression_ratio?: number;
+  caveman_saved_tokens?: number;
+  output_compression_ratio?: number;
+  prompt_optimization_mode?: string;
 }
 
 
@@ -94,12 +107,12 @@ export interface Trace {
 }
 
 export interface UploadedDoc {
-  id: string;
+  id?: string;
   fileName: string;
   fileSize: number;
   fileType: string;
   mode: IngestionMode;
-  department: string;
+  department?: string;
   division?: string;
   businessLine?: string;
   uploadedBy: string;
@@ -108,4 +121,6 @@ export interface UploadedDoc {
   status: 'indexing' | 'completed' | 'failed';
   vectorId?: string;
   embeddingModel?: string;
+  document_id?: string;
+  vectordocument_id?: string;
 }

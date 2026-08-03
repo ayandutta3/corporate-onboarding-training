@@ -57,12 +57,13 @@ async def get_documents(
     query = {}
     
     if current_user.role != Role.ADMIN:
-        division_or_clauses = [{"division": "Corporate"}]
-        if current_user.division == "BusinessLine" and current_user.businessLine:
-            division_or_clauses.append({
-                "division": "BusinessLine",
-                "businessLine": current_user.businessLine
-            })
+        division_or_clauses = [
+            {"division": "Corporate"},
+            {"division": "BusinessLine"}
+        ]
+        if current_user.businessLine:
+            division_or_clauses.append({"businessLine": current_user.businessLine})
+            division_or_clauses.append({"department": current_user.businessLine})
         query["$or"] = division_or_clauses
         
     # Apply filters
@@ -125,7 +126,7 @@ async def get_document(
         
     if current_user.role != Role.ADMIN:
         if doc.division == "BusinessLine":
-            if current_user.division != "BusinessLine" or current_user.businessLine != doc.businessLine:
+            if current_user.businessLine and doc.businessLine and current_user.businessLine != doc.businessLine:
                 raise HTTPException(status_code=403, detail="Not authorized to access this document")
                 
     return doc.model_dump(by_alias=True)
@@ -183,6 +184,30 @@ async def preview_document(
         return StreamingResponse(file_iterator(), status_code=206, headers=headers)
     
     return FileResponse(doc.file_path, media_type=mime_type, filename=doc.filename, content_disposition_type="inline")
+
+@router.get("/by-name/{filename}/preview", summary="Preview document by filename")
+async def preview_document_by_name(
+    filename: str,
+    request: Request,
+    current_user: UserInDB = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_database)
+):
+    repo = DocumentRepository(db)
+    cursor = repo.collection.find({"$or": [{"filename": filename}, {"title": filename}]})
+    doc_data = await cursor.to_list(length=1)
+    if doc_data:
+        doc = DocumentModel(**doc_data[0])
+        if os.path.exists(doc.file_path):
+            mime_type = _get_file_mime_type(doc.file_path)
+            return FileResponse(doc.file_path, media_type=mime_type, filename=doc.filename, content_disposition_type="inline")
+    
+    uploads_dir = os.path.join(os.getcwd(), "uploads")
+    fallback_path = os.path.join(uploads_dir, filename)
+    if os.path.exists(fallback_path):
+        mime_type = _get_file_mime_type(fallback_path)
+        return FileResponse(fallback_path, media_type=mime_type, filename=filename, content_disposition_type="inline")
+        
+    raise HTTPException(status_code=404, detail=f"File {filename} not found")
 
 @router.get("/{document_id}/download", summary="Download document")
 async def download_document(
